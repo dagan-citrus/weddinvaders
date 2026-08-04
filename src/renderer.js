@@ -128,7 +128,7 @@ function drawItem(ctx, item) {
 
   // Card background + border
   const bg     = essential ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.08)';
-  const border = essential ? '#ffd700'               : 'rgba(255,255,255,0.22)';
+  const border = essential ? 'rgba(255,215,0,0.35)' : 'rgba(255,255,255,0.10)';
   roundRect(ctx, x, y, ITEM_WIDTH, ITEM_HEIGHT, 8);
   ctx.fillStyle   = bg;     ctx.fill();
   ctx.strokeStyle = border; ctx.lineWidth = essential ? 2 : 1; ctx.stroke();
@@ -176,6 +176,10 @@ function drawItem(ctx, item) {
   } else if (incomeType === 'discount') {
     ctx.font = 'bold 9px monospace'; ctx.fillStyle = '#ff9800'; ctx.textAlign = 'center';
     ctx.fillText('−30% OFF', x + ITEM_WIDTH / 2, y + ITEM_HEIGHT - 3);
+
+  } else if (incomeType === 'time') {
+    ctx.font = 'bold 8px monospace'; ctx.fillStyle = '#64b5f6'; ctx.textAlign = 'center';
+    ctx.fillText('⏳ SLOW TIME', x + ITEM_WIDTH / 2, y + ITEM_HEIGHT - 3);
   }
 
   // Required-item star (top-left)
