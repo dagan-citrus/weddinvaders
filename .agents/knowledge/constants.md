@@ -1,7 +1,7 @@
 # Component: `src/constants.js`
 
 ## Location
-`src/constants.js` — 70 lines. No exported class; a flat module of exported constants.
+`src/constants.js` — 74 lines. No exported class; a flat module of exported constants.
 
 ## Purpose
 The single source of truth for every dimension, timing value, and the item/ammo data schema.
@@ -20,10 +20,12 @@ It's the highest-fan-in module in the repo — imported by `levels.js`, `useGame
 | `BULLET_SPEED`, `BULLET_WIDTH`, `BULLET_HEIGHT` | 24–26 | Projectile physics/size. |
 | `ITEM_WIDTH`, `ITEM_HEIGHT`, `ITEM_SPEED` | 29–31 | Flying-item size; `ITEM_SPEED` here is a fallback — each level overrides it via `itemSpeed` in `levels.js`. |
 | `AMMO_ORDER`, `AMMO_META` | 34–39 | Cycling order (`['cash','invite','heart']`) and per-ammo `{label, color, description}` used by the HUD and mobile buttons. |
-| `WEDDING_ITEMS` | 42–58 | The item schema: `id, emoji, label, price, essential, exclusiveTo, incomeType, incomeAmount?, ammoRequired?, discountPct?`. This is the data `game-design.md`'s item table describes. |
-| `AMMO_DAMAGE` | 61 | Per-shot damage by ammo type: `{cash: 100, invite: 1, heart: 1}`. |
-| `INITIAL_MONEY`, `INITIAL_INVITE`, `INITIAL_HEART` | 64–66 | Fallback starting resources (levels in `levels.js` override money/invites/hearts per level). |
-| `GAME_DURATION`, `ROW_ADVANCE_INTERVAL` | 69–70 | Fallback timing (also overridden per level by `gameDuration`/`rowAdvance` in `levels.js`). |
+| `WEDDING_ITEMS` | 43–60 | The item schema: `id, emoji, label, price, essential, exclusiveTo, incomeType, incomeAmount?, ammoRequired?, discountPct?, spawnWeight`. This is the data `game-design.md`'s item table describes. `spawnWeight` drives `useGameState.js`'s weighted spawn pick (`pickWeighted()`) — higher is more common. |
+| `AMMO_DAMAGE` | 63 | Per-shot damage by ammo type: `{cash: 100, invite: 1, heart: 1}`. |
+| `INITIAL_MONEY`, `INITIAL_INVITE`, `INITIAL_HEART` | 66–68 | Fallback starting resources (levels in `levels.js` override money/invites/hearts per level). |
+| `GAME_DURATION`, `ROW_ADVANCE_INTERVAL` | 71–72 | Fallback timing (also overridden per level by `gameDuration`/`rowAdvance` in `levels.js`). |
+| `ROW_ADVANCE_SPEEDUP` | 73 | Multiplier applied to the row-advance rate once all required items are acquired (default `2.5`). See `game-design.md`'s "Row-Advance Pacing". |
+| `HOURGLASS_SLOW_SECONDS` | 74 | Real seconds the `hourglass` item halves the row-advance rate for (default `15`). |
 
 ## Relationships / Cross-links
 - Consumed by `src/levels.js` (`WEDDING_ITEMS` → `getSpawnPool()`), `src/useGameState.js`, `src/renderer.js`, and `src/Game.jsx` — see [`use-game-state.md`](use-game-state.md), [`renderer.md`](renderer.md), [`game-jsx.md`](game-jsx.md).

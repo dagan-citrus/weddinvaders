@@ -7,6 +7,7 @@ import {
   BULLET_SPEED, BULLET_WIDTH, BULLET_HEIGHT,
   ITEM_WIDTH, ITEM_HEIGHT,
   AMMO_DAMAGE, AMMO_ORDER,
+  ROW_ADVANCE_SPEEDUP, HOURGLASS_SLOW_SECONDS,
 } from './constants';
 import { LEVELS, getSpawnPool, isLevelComplete } from './levels';
 
@@ -33,6 +34,17 @@ function makePlayer(role) {
   };
 }
 
+// Picks one template from the pool, weighted by each template's spawnWeight
+function pickWeighted(pool) {
+  const total = pool.reduce((sum, t) => sum + (t.spawnWeight ?? 1), 0);
+  let roll = Math.random() * total;
+  for (const t of pool) {
+    roll -= (t.spawnWeight ?? 1);
+    if (roll <= 0) return t;
+  }
+  return pool[pool.length - 1];
+}
+
 function spawnItem(groomRow, brideRow, level, acquiredItems = []) {
   const minRow = groomRow + 1;
   const maxRow = brideRow  - 1;
@@ -46,7 +58,7 @@ function spawnItem(groomRow, brideRow, level, acquiredItems = []) {
 
   const row      = minRow + Math.floor(Math.random() * (maxRow - minRow + 1));
   const goLeft   = Math.random() < 0.5;
-  const template = spawnPool[Math.floor(Math.random() * spawnPool.length)];
+  const template = pickWeighted(spawnPool);
   const scaledPrice = Math.ceil(template.price * level.priceScale);
 
   // Randomise donation amounts so each guest/family arrival feels fresh
@@ -104,6 +116,7 @@ export function getInitialState(levelIndex = 0) {
     rowAdvanceTimer: 0,
     advanceAnim:     0,
     meetingTimer:    0,   // counts up during 'meeting' phase for animations
+    slowTimer:       0,   // frames remaining of hourglass row-advance slowdown
   };
 }
 
@@ -255,15 +268,22 @@ export function useGameState() {
       let { frame, time, money, ammo, discount, lives,
             players, bullets, items, acquiredItems,
             messages, score, spawnTimer, rowAdvanceTimer, advanceAnim,
-            currentLevel } = s;
+            currentLevel, slowTimer } = s;
 
       frame++;
       advanceAnim = Math.max(0, advanceAnim - 1);
+      slowTimer   = Math.max(0, slowTimer - 1);
 
-      // ── timer & row advance ──────────────────────────────────────────
+      // ── timer & row advance ────────────────────────────────────────────
+      // Speeds up once all required items are in hand (less time to "gear up"
+      // on extras), tempered by a temporary slowdown from the hourglass item.
+      const requiredDone = isLevelComplete(level, acquiredItems);
+      let advanceRate = requiredDone ? ROW_ADVANCE_SPEEDUP : 1;
+      if (slowTimer > 0) advanceRate *= 0.5;
+
       if (frame % FPS === 0) {
         time = Math.max(0, time - 1);
-        rowAdvanceTimer++;
+        rowAdvanceTimer += advanceRate;
       }
 
       let newPlayers = players;
@@ -371,6 +391,9 @@ export function useGameState() {
             } else if (it.incomeType === 'mine') {
               lives = Math.max(0, lives - 1);
               newMessages.push(msg('💣 TRAP! −1 life', it, '#f44336'));
+            } else if (it.incomeType === 'time') {
+              slowTimer = HOURGLASS_SLOW_SECONDS * FPS;
+              newMessages.push(msg(`⏳ +${HOURGLASS_SLOW_SECONDS}s reprieve!`, it, '#64b5f6'));
             } else {
               // Purchasable item (required or optional) — award score
               const pts = it.maxPrice * 10;
@@ -416,6 +439,7 @@ export function useGameState() {
         spawnTimer,
         rowAdvanceTimer,
         advanceAnim,
+        slowTimer,
       };
     });
   }, []);
