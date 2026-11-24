@@ -28,7 +28,6 @@ export const BULLET_HEIGHT = 6;
 // Flying items
 export const ITEM_WIDTH  = 68;
 export const ITEM_HEIGHT = 56; // fits in ROW_HEIGHT with 2px margin top+bottom
-export const ITEM_SPEED  = 1.5;
 
 // Ammo labels used in HUD / cycling
 export const AMMO_ORDER = ['cash', 'invite', 'heart'];
@@ -38,37 +37,9 @@ export const AMMO_META  = {
   heart:  { label: '💕', color: '#e91e63',  description: 'Heart — family gives big donations'  },
 };
 
-// Item definitions
-// spawnWeight controls relative spawn probability — higher = more common.
-export const WEDDING_ITEMS = [
-  // ── essentials (bought with cash) ──
-  { id: 'rings',        emoji: '💍', label: 'Rings',          price: 500, essential: true,  exclusiveTo: null,    incomeType: null,       spawnWeight: 10 },
-  { id: 'officiant',    emoji: '⛪', label: 'Officiant',       price: 300, essential: true,  exclusiveTo: null,    incomeType: null,       spawnWeight: 10 },
-  { id: 'catering',     emoji: '🍽️', label: 'Catering',        price: 800, essential: true,  exclusiveTo: null,    incomeType: null,       spawnWeight: 10 },
-  // ── income items ──
-  { id: 'guest',        emoji: '👥', label: 'Guest',       price: 0, essential: false, exclusiveTo: null,    incomeType: 'income', incomeAmount: 150, ammoRequired: 'invite', spawnWeight: 5 },
-  { id: 'parent_bride', emoji: '👩‍👧', label: 'Her Family',  price: 0, essential: false, exclusiveTo: 'bride', incomeType: 'income', incomeAmount: 400, ammoRequired: 'heart',  spawnWeight: 2 },
-  { id: 'parent_groom', emoji: '👨‍👦', label: 'His Family',  price: 0, essential: false, exclusiveTo: 'groom', incomeType: 'income', incomeAmount: 400, ammoRequired: 'heart',  spawnWeight: 2 },
-  // ── special ──
-  { id: 'discount',     emoji: '🎀', label: 'Organizer',       price: 200, essential: false, exclusiveTo: null,    incomeType: 'discount', discountPct: 0.3,  ammoRequired: 'cash',  spawnWeight: 3 },
-  { id: 'mine',         emoji: '💣', label: 'Trap',            price: 0,   essential: false, exclusiveTo: null,    incomeType: 'mine',     ammoRequired: null,                       spawnWeight: 3 },
-  { id: 'hourglass',    emoji: '⏳', label: 'More Time',       price: 150, essential: false, exclusiveTo: null,    incomeType: 'time',     ammoRequired: 'cash',                     spawnWeight: 2 },
-  // ── optional purchases ──
-  { id: 'flowers',      emoji: '💐', label: 'Flowers',         price: 200, essential: false, exclusiveTo: 'bride', incomeType: null,       spawnWeight: 10 },
-  { id: 'suit',         emoji: '🤵', label: 'Suit',            price: 250, essential: false, exclusiveTo: 'groom', incomeType: null,       spawnWeight: 10 },
-  { id: 'cake',         emoji: '🎂', label: 'Cake',            price: 350, essential: false, exclusiveTo: null,    incomeType: null,       spawnWeight: 10 },
-];
-
 // Damage each ammo type does per bullet hit
 export const AMMO_DAMAGE = { cash: 100, invite: 1, heart: 1 };
 
-// Starting resources
-export const INITIAL_MONEY  = 2000; // cash is both ammo and money
-export const INITIAL_INVITE = 8;
-export const INITIAL_HEART  = 4;
-
 // Timing
-export const GAME_DURATION         = 90;  // seconds
-export const ROW_ADVANCE_INTERVAL  = 18;  // seconds between each row advance
 export const ROW_ADVANCE_SPEEDUP   = 2.5; // multiplier once all required items are acquired
 export const HOURGLASS_SLOW_SECONDS = 15; // real seconds the hourglass item slows row-advance for
