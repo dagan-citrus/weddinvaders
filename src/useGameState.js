@@ -9,7 +9,7 @@ import {
   AMMO_DAMAGE, AMMO_ORDER,
   ROW_ADVANCE_SPEEDUP, HOURGLASS_SLOW_SECONDS,
 } from './constants';
-import { LEVELS, getSpawnPool, isLevelComplete } from './levels';
+import { getSpawnPool, isLevelComplete } from './levels';
 
 const FPS               = 60;
 const ITEM_SPAWN_FRAMES = 90;   // ~1.5 s between spawns
@@ -45,13 +45,16 @@ function pickWeighted(pool) {
   return pool[pool.length - 1];
 }
 
-function spawnItem(groomRow, brideRow, level, acquiredItems = []) {
+// Income items that need hearts are "family": bigger donations, their own popup.
+const isFamilyDonor = (item) => item.ammoRequired === 'heart';
+
+function spawnItem(groomRow, brideRow, level, eventItems, acquiredItems) {
   const minRow = groomRow + 1;
   const maxRow = brideRow  - 1;
   if (minRow > maxRow) return null;
 
   // Don't re-spawn purchasable/discount items already acquired — only income & mines keep spawning
-  const spawnPool = getSpawnPool(level).filter(t =>
+  const spawnPool = getSpawnPool(level, eventItems).filter(t =>
     t.incomeType === 'income' || t.incomeType === 'mine' || !acquiredItems.includes(t.id)
   );
   if (spawnPool.length === 0) return null;
@@ -64,7 +67,7 @@ function spawnItem(groomRow, brideRow, level, acquiredItems = []) {
   // Randomise donation amounts so each guest/family arrival feels fresh
   let incomeAmount = template.incomeAmount ?? 0;
   if (template.incomeType === 'income' && incomeAmount > 0) {
-    const isFamily  = template.id === 'parent_bride' || template.id === 'parent_groom';
+    const isFamily  = isFamilyDonor(template);
     const pool = isFamily
       ? [300, 350, 400, 450, 500]   // family: $300–$500
       : [100, 150, 200, 250, 300];  // guests: $100–$300
@@ -94,9 +97,14 @@ function spawnItem(groomRow, brideRow, level, acquiredItems = []) {
 
 // ── initial state ──────────────────────────────────────────────────────────
 
-export function getInitialState(levelIndex = 0) {
-  const idx   = Math.min(levelIndex, LEVELS.length - 1);
-  const level = LEVELS[idx];
+/**
+ * Builds a fresh game state for one level of an event.
+ * @param {import('./events/eventConfig').EventConfig} event
+ * @param {number} [levelIndex] 0-based; clamped to the event's last level
+ */
+export function getInitialState(event, levelIndex = 0) {
+  const idx   = Math.min(levelIndex, event.levels.length - 1);
+  const level = event.levels[idx];
   return {
     phase:           'title',
     currentLevel:    idx,
@@ -120,10 +128,222 @@ export function getInitialState(levelIndex = 0) {
   };
 }
 
+// ── level transition ───────────────────────────────────────────────────────
+
+/**
+ * The state after the current level: the next level, already playing, or the
+ * game-complete screen when there is none. Callers keep their own phase guards.
+ * @param {object} state
+ * @param {import('./events/eventConfig').EventConfig} event
+ */
+export function advanceLevel(state, event) {
+  const nextLevel = state.currentLevel + 1;
+  return nextLevel < event.levels.length
+    ? { ...getInitialState(event, nextLevel), phase: 'playing' }
+    : { ...state, phase: 'gameComplete' };
+}
+
+// ── main update (one frame) ────────────────────────────────────────────────
+
+/**
+ * Returns the state one frame later. Never mutates its arguments.
+ * @param {object} s  current game state
+ * @param {import('./events/eventConfig').EventConfig} event
+ * @param {{ has(code: string): boolean }} keys  currently held KeyboardEvent codes
+ */
+export function stepGame(s, event, keys) {
+  // Meeting phase: just tick the animation timer, no game logic
+  if (s.phase === 'meeting') {
+    return { ...s, meetingTimer: s.meetingTimer + 1 };
+  }
+  if (s.phase !== 'playing') return s;
+
+  const level = event.levels[s.currentLevel];
+
+  let { frame, time, money, ammo, discount, lives,
+        players, bullets, items, acquiredItems,
+        messages, score, spawnTimer, rowAdvanceTimer, advanceAnim,
+        currentLevel, slowTimer } = s;
+
+  frame++;
+  advanceAnim = Math.max(0, advanceAnim - 1);
+  slowTimer   = Math.max(0, slowTimer - 1);
+
+  // ── timer & row advance ────────────────────────────────────────────
+  // Speeds up once all required items are in hand (less time to "gear up"
+  // on extras), tempered by a temporary slowdown from the hourglass item.
+  const requiredDone = isLevelComplete(level, acquiredItems);
+  let advanceRate = requiredDone ? ROW_ADVANCE_SPEEDUP : 1;
+  if (slowTimer > 0) advanceRate *= 0.5;
+
+  if (frame % FPS === 0) {
+    time = Math.max(0, time - 1);
+    rowAdvanceTimer += advanceRate;
+  }
+
+  let newPlayers = players;
+  if (rowAdvanceTimer >= level.rowAdvance) {
+    rowAdvanceTimer = 0;
+    const gRow = players.groom.row;
+    const bRow = players.bride.row;
+    if (gRow < bRow) {
+      const newGRow = gRow + 1;
+      const newBRow = bRow - 1;
+      newPlayers = {
+        groom: { ...players.groom, row: newGRow, y: rowToY(newGRow) },
+        bride: { ...players.bride, row: newBRow, y: rowToY(newBRow) },
+      };
+      advanceAnim = 60;
+      items = items.filter(it => it.row > newGRow && it.row < newBRow);
+    }
+  }
+
+  // ── player left / right movement ────────────────────────────────
+  const moveX = (p, leftKey, rightKey) => {
+    if (!p.alive) return p;
+    let x = p.x;
+    if (keys.has(leftKey))  x = Math.max(0, x - p.speed);
+    if (keys.has(rightKey)) x = Math.min(GAME_WIDTH - PLAYER_WIDTH, x + p.speed);
+    return x !== p.x ? { ...p, x } : p;
+  };
+  newPlayers = {
+    groom: moveX(newPlayers.groom, 'ArrowLeft', 'ArrowRight'),
+    bride: moveX(newPlayers.bride, 'KeyA',      'KeyD'),
+  };
+
+  // ── bullets ──────────────────────────────────────────────────────
+  bullets = bullets
+    .map(b => ({ ...b, y: b.y + b.vy }))
+    .filter(b => b.y > -20 && b.y < PLAY_HEIGHT + 20);
+
+  // ── item spawn ───────────────────────────────────────────────────
+  spawnTimer++;
+  if (spawnTimer >= ITEM_SPAWN_FRAMES && items.length < 8) {
+    const it = spawnItem(newPlayers.groom.row, newPlayers.bride.row, level, event.items, acquiredItems);
+    if (it) items = [...items, it];
+    spawnTimer = 0;
+  }
+
+  // ── move items + tick flash ───────────────────────────────────────
+  items = items.map(it => ({
+    ...it,
+    x:          it.x + it.vx,
+    flashTimer: Math.max(0, it.flashTimer - 1),
+  }));
+
+  // ── items escaping off-screen → lose a life if essential and not yet acquired
+  const escaped = items.filter(it =>
+    it.x < -ITEM_WIDTH * 2 || it.x > GAME_WIDTH + ITEM_WIDTH * 2
+  );
+  if (escaped.some(it => it.essential && !acquiredItems.includes(it.templateId))) {
+    lives = Math.max(0, lives - 1);
+  }
+  items = items.filter(it =>
+    it.x >= -ITEM_WIDTH * 2 && it.x <= GAME_WIDTH + ITEM_WIDTH * 2
+  );
+
+  // ── bullet ↔ item collisions ──────────────────────────────────────
+  let newMessages = messages
+    .filter(m => m.timer > 0)
+    .map(m => ({ ...m, timer: m.timer - 1 }));
+  const newAcquired = [...acquiredItems];
+
+  for (let bi = bullets.length - 1; bi >= 0; bi--) {
+    const b  = bullets[bi];
+    let hit  = false;
+
+    for (let ii = items.length - 1; ii >= 0; ii--) {
+      const it = items[ii];
+
+      if (b.x > it.x + ITEM_WIDTH  || b.x + BULLET_WIDTH  < it.x) continue;
+      if (b.y > it.y + ITEM_HEIGHT || b.y + BULLET_HEIGHT < it.y) continue;
+
+      hit = true;
+      const ammoOK   = !it.ammoRequired || it.ammoRequired === b.ammoType;
+      const playerOK = !it.exclusiveTo   || it.exclusiveTo  === b.role;
+
+      if (!ammoOK || !playerOK) {
+        items[ii] = { ...it, flashTimer: 12 };
+        break;
+      }
+
+      const dmg      = AMMO_DAMAGE[b.ammoType] * discount;
+      const newPrice = Math.max(0, it.price - dmg);
+
+      if (newPrice <= 0) {
+        items.splice(ii, 1);
+        if (!newAcquired.includes(it.templateId)) newAcquired.push(it.templateId);
+
+        if (it.incomeType === 'income') {
+          money += it.incomeAmount;
+          const isFamily = isFamilyDonor(it);
+          const prefix   = isFamily ? '💕 Family donated' : '💌 Guest arrived';
+          newMessages.push(msg(`${prefix}! +$${it.incomeAmount}`, it, '#4caf50'));
+        } else if (it.incomeType === 'discount') {
+          discount *= (1 - it.discountPct);
+          newMessages.push(msg(`${Math.round(it.discountPct * 100)}% discount! ${it.emoji}`, it, '#ff9800'));
+        } else if (it.incomeType === 'mine') {
+          lives = Math.max(0, lives - 1);
+          newMessages.push(msg('💣 TRAP! −1 life', it, '#f44336'));
+        } else if (it.incomeType === 'time') {
+          slowTimer = HOURGLASS_SLOW_SECONDS * FPS;
+          newMessages.push(msg(`⏳ +${HOURGLASS_SLOW_SECONDS}s reprieve!`, it, '#64b5f6'));
+        } else {
+          // Purchasable item (required or optional) — award score
+          const pts = it.maxPrice * 10;
+          score += pts;
+          newMessages.push(msg(`+${pts}pts`, it, it.essential ? '#ffd700' : '#b3e5ff'));
+        }
+      } else {
+        items[ii] = { ...it, price: newPrice, flashTimer: 8 };
+      }
+      break;
+    }
+
+    if (hit) bullets.splice(bi, 1);
+  }
+
+  // ── win / lose check ─────────────────────────────────────────────
+  const levelDone      = isLevelComplete(level, newAcquired);
+  const playersHaveMet = newPlayers.groom.row >= newPlayers.bride.row;
+
+  let phase = 'playing';
+  if (lives <= 0) {
+    phase = 'lost';
+  } else if (playersHaveMet) {
+    // Physical meeting → show couple scene
+    phase = (levelDone && money >= 0) ? 'meeting' : 'lost';
+  } else if (time <= 0) {
+    if (levelDone && money >= 0) {
+      phase = currentLevel + 1 < event.levels.length ? 'levelComplete' : 'gameComplete';
+    } else {
+      phase = 'lost';
+    }
+  }
+
+  return {
+    ...s,
+    phase, frame, time, money, ammo, discount, lives,
+    players:         newPlayers,
+    bullets,
+    items,
+    acquiredItems:   newAcquired,
+    messages:        newMessages,
+    score,
+    spawnTimer,
+    rowAdvanceTimer,
+    advanceAnim,
+    slowTimer,
+  };
+}
+
 // ── hook ───────────────────────────────────────────────────────────────────
 
-export function useGameState() {
-  const stateRef          = useRef(getInitialState());
+/**
+ * @param {import('./events/eventConfig').EventConfig} event  constant for the life of a mount
+ */
+export function useGameState(event) {
+  const stateRef          = useRef(getInitialState(event));
   const keysRef           = useRef(new Set());
   const rafRef            = useRef(null);
   const renderCallbackRef = useRef(null);
@@ -191,24 +411,17 @@ export function useGameState() {
 
       // Meeting scene: any key advances once the couple image has appeared (>= 80 frames)
       if (s.phase === 'meeting' && e.type === 'keydown' && s.meetingTimer >= 80) {
-        const nextLevel = s.currentLevel + 1;
-        if (nextLevel < LEVELS.length) {
-          setState({ ...getInitialState(nextLevel), phase: 'playing' });
-        } else {
-          setState(s => ({ ...s, phase: 'gameComplete' }));
-        }
-        return;
+        setState(s => advanceLevel(s, event)); return;
       }
 
       if (s.phase === 'levelComplete' && e.type === 'keydown') {
-        const nextLevel = s.currentLevel + 1;
-        setState({ ...getInitialState(nextLevel), phase: 'playing' }); return;
+        setState(s => advanceLevel(s, event)); return;
       }
       if (s.phase === 'gameComplete' && e.type === 'keydown') {
-        setState({ ...getInitialState(0), phase: 'title' }); return;
+        setState({ ...getInitialState(event, 0), phase: 'title' }); return;
       }
       if (s.phase === 'lost' && e.code === 'KeyR' && e.type === 'keydown') {
-        setState({ ...getInitialState(0), phase: 'playing' }); return;
+        setState({ ...getInitialState(event, 0), phase: 'playing' }); return;
       }
 
       if (s.phase !== 'playing') return;
@@ -216,7 +429,7 @@ export function useGameState() {
       if (e.type === 'keydown') {
         // N: fast-forward row advance when all required items are acquired
         if (e.code === 'KeyN') {
-          const level = LEVELS[s.currentLevel];
+          const level = event.levels[s.currentLevel];
           if (isLevelComplete(level, s.acquiredItems)) {
             setState(s => {
               const gRow = s.players.groom.row;
@@ -251,198 +464,13 @@ export function useGameState() {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('keyup',   onKey);
     };
-  }, [cycleAmmoFor, shoot]);
+  }, [event, cycleAmmoFor, shoot]);
 
   // ── main update (runs every frame) ────────────────────────────────────
 
   const update = useCallback(() => {
-    setState(s => {
-      // Meeting phase: just tick the animation timer, no game logic
-      if (s.phase === 'meeting') {
-        return { ...s, meetingTimer: s.meetingTimer + 1 };
-      }
-      if (s.phase !== 'playing') return s;
-
-      const level = LEVELS[s.currentLevel];
-
-      let { frame, time, money, ammo, discount, lives,
-            players, bullets, items, acquiredItems,
-            messages, score, spawnTimer, rowAdvanceTimer, advanceAnim,
-            currentLevel, slowTimer } = s;
-
-      frame++;
-      advanceAnim = Math.max(0, advanceAnim - 1);
-      slowTimer   = Math.max(0, slowTimer - 1);
-
-      // ── timer & row advance ────────────────────────────────────────────
-      // Speeds up once all required items are in hand (less time to "gear up"
-      // on extras), tempered by a temporary slowdown from the hourglass item.
-      const requiredDone = isLevelComplete(level, acquiredItems);
-      let advanceRate = requiredDone ? ROW_ADVANCE_SPEEDUP : 1;
-      if (slowTimer > 0) advanceRate *= 0.5;
-
-      if (frame % FPS === 0) {
-        time = Math.max(0, time - 1);
-        rowAdvanceTimer += advanceRate;
-      }
-
-      let newPlayers = players;
-      if (rowAdvanceTimer >= level.rowAdvance) {
-        rowAdvanceTimer = 0;
-        const gRow = players.groom.row;
-        const bRow = players.bride.row;
-        if (gRow < bRow) {
-          const newGRow = gRow + 1;
-          const newBRow = bRow - 1;
-          newPlayers = {
-            groom: { ...players.groom, row: newGRow, y: rowToY(newGRow) },
-            bride: { ...players.bride, row: newBRow, y: rowToY(newBRow) },
-          };
-          advanceAnim = 60;
-          items = items.filter(it => it.row > newGRow && it.row < newBRow);
-        }
-      }
-
-      // ── player left / right movement ────────────────────────────────
-      const keys = keysRef.current;
-      const moveX = (p, leftKey, rightKey) => {
-        if (!p.alive) return p;
-        let x = p.x;
-        if (keys.has(leftKey))  x = Math.max(0, x - p.speed);
-        if (keys.has(rightKey)) x = Math.min(GAME_WIDTH - PLAYER_WIDTH, x + p.speed);
-        return x !== p.x ? { ...p, x } : p;
-      };
-      newPlayers = {
-        groom: moveX(newPlayers.groom, 'ArrowLeft', 'ArrowRight'),
-        bride: moveX(newPlayers.bride, 'KeyA',      'KeyD'),
-      };
-
-      // ── bullets ──────────────────────────────────────────────────────
-      bullets = bullets
-        .map(b => ({ ...b, y: b.y + b.vy }))
-        .filter(b => b.y > -20 && b.y < PLAY_HEIGHT + 20);
-
-      // ── item spawn ───────────────────────────────────────────────────
-      spawnTimer++;
-      if (spawnTimer >= ITEM_SPAWN_FRAMES && items.length < 8) {
-        const it = spawnItem(newPlayers.groom.row, newPlayers.bride.row, level, acquiredItems);
-        if (it) items = [...items, it];
-        spawnTimer = 0;
-      }
-
-      // ── move items + tick flash ───────────────────────────────────────
-      items = items.map(it => ({
-        ...it,
-        x:          it.x + it.vx,
-        flashTimer: Math.max(0, it.flashTimer - 1),
-      }));
-
-      // ── items escaping off-screen → lose a life if essential and not yet acquired
-      const escaped = items.filter(it =>
-        it.x < -ITEM_WIDTH * 2 || it.x > GAME_WIDTH + ITEM_WIDTH * 2
-      );
-      if (escaped.some(it => it.essential && !acquiredItems.includes(it.templateId))) {
-        lives = Math.max(0, lives - 1);
-      }
-      items = items.filter(it =>
-        it.x >= -ITEM_WIDTH * 2 && it.x <= GAME_WIDTH + ITEM_WIDTH * 2
-      );
-
-      // ── bullet ↔ item collisions ──────────────────────────────────────
-      let newMessages = messages
-        .filter(m => m.timer > 0)
-        .map(m => ({ ...m, timer: m.timer - 1 }));
-      const newAcquired = [...acquiredItems];
-
-      for (let bi = bullets.length - 1; bi >= 0; bi--) {
-        const b  = bullets[bi];
-        let hit  = false;
-
-        for (let ii = items.length - 1; ii >= 0; ii--) {
-          const it = items[ii];
-
-          if (b.x > it.x + ITEM_WIDTH  || b.x + BULLET_WIDTH  < it.x) continue;
-          if (b.y > it.y + ITEM_HEIGHT || b.y + BULLET_HEIGHT < it.y) continue;
-
-          hit = true;
-          const ammoOK   = !it.ammoRequired || it.ammoRequired === b.ammoType;
-          const playerOK = !it.exclusiveTo   || it.exclusiveTo  === b.role;
-
-          if (!ammoOK || !playerOK) {
-            items[ii] = { ...it, flashTimer: 12 };
-            break;
-          }
-
-          const dmg      = AMMO_DAMAGE[b.ammoType] * discount;
-          const newPrice = Math.max(0, it.price - dmg);
-
-          if (newPrice <= 0) {
-            items.splice(ii, 1);
-            if (!newAcquired.includes(it.templateId)) newAcquired.push(it.templateId);
-
-            if (it.incomeType === 'income') {
-              money += it.incomeAmount;
-              const isFamily = it.templateId === 'parent_bride' || it.templateId === 'parent_groom';
-              const prefix   = isFamily ? '💕 Family donated' : '💌 Guest arrived';
-              newMessages.push(msg(`${prefix}! +$${it.incomeAmount}`, it, '#4caf50'));
-            } else if (it.incomeType === 'discount') {
-              discount *= (1 - it.discountPct);
-              newMessages.push(msg(`${Math.round(it.discountPct * 100)}% discount! ${it.emoji}`, it, '#ff9800'));
-            } else if (it.incomeType === 'mine') {
-              lives = Math.max(0, lives - 1);
-              newMessages.push(msg('💣 TRAP! −1 life', it, '#f44336'));
-            } else if (it.incomeType === 'time') {
-              slowTimer = HOURGLASS_SLOW_SECONDS * FPS;
-              newMessages.push(msg(`⏳ +${HOURGLASS_SLOW_SECONDS}s reprieve!`, it, '#64b5f6'));
-            } else {
-              // Purchasable item (required or optional) — award score
-              const pts = it.maxPrice * 10;
-              score += pts;
-              newMessages.push(msg(`+${pts}pts`, it, it.essential ? '#ffd700' : '#b3e5ff'));
-            }
-          } else {
-            items[ii] = { ...it, price: newPrice, flashTimer: 8 };
-          }
-          break;
-        }
-
-        if (hit) bullets.splice(bi, 1);
-      }
-
-      // ── win / lose check ─────────────────────────────────────────────
-      const levelDone      = isLevelComplete(level, newAcquired);
-      const playersHaveMet = newPlayers.groom.row >= newPlayers.bride.row;
-
-      let phase = 'playing';
-      if (lives <= 0) {
-        phase = 'lost';
-      } else if (playersHaveMet) {
-        // Physical meeting → show couple scene
-        phase = (levelDone && money >= 0) ? 'meeting' : 'lost';
-      } else if (time <= 0) {
-        if (levelDone && money >= 0) {
-          phase = currentLevel + 1 < LEVELS.length ? 'levelComplete' : 'gameComplete';
-        } else {
-          phase = 'lost';
-        }
-      }
-
-      return {
-        ...s,
-        phase, frame, time, money, ammo, discount, lives,
-        players:         newPlayers,
-        bullets,
-        items,
-        acquiredItems:   newAcquired,
-        messages:        newMessages,
-        score,
-        spawnTimer,
-        rowAdvanceTimer,
-        advanceAnim,
-        slowTimer,
-      };
-    });
-  }, []);
+    setState(s => stepGame(s, event, keysRef.current));
+  }, [event]);
 
   // ── game loop ─────────────────────────────────────────────────────────
 
@@ -467,17 +495,12 @@ export function useGameState() {
       case 'START':
         setState(s => ({ ...s, phase: 'playing' })); break;
       case 'RESTART':
-        setState({ ...getInitialState(0), phase: 'playing' }); break;
+        setState({ ...getInitialState(event, 0), phase: 'playing' }); break;
       case 'NEXT_LEVEL': {
         const s = getState();
         // Guard: don't advance too early during meeting animation
         if (s.phase === 'meeting' && s.meetingTimer < 80) break;
-        const nextLevel = s.currentLevel + 1;
-        if (nextLevel < LEVELS.length) {
-          setState({ ...getInitialState(nextLevel), phase: 'playing' });
-        } else {
-          setState({ ...s, phase: 'gameComplete' });
-        }
+        setState(advanceLevel(s, event));
         break;
       }
       case 'SHOOT':
@@ -489,7 +512,7 @@ export function useGameState() {
         })); break;
       default: break;
     }
-  }, [shoot]);
+  }, [event, shoot]);
 
   return { getState, startLoop, stopLoop, setRenderCallback, handleAction };
 }

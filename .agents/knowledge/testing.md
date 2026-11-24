@@ -21,6 +21,18 @@ change a user can see. Test files must lint clean too.
   pixels in e2e instead.
 - jsdom never fires `Image.onload`, so component tests must not depend on assets being loaded.
 
+### Testing game logic
+- The game logic is pure and testable without React: `getInitialState(event, levelIndex)`,
+  `stepGame(state, event, keys)` and `advanceLevel(state, event)` in `src/useGameState.js`,
+  `getSpawnPool(level, items)` / `isLevelComplete()` in `src/levels.js`, and
+  `render(ctx, state, assets, event)` in `src/renderer.js` (pass a recording context to assert the
+  strings drawn). Pass any event config — `makeEvent()` from `src/events/eventFixtures.js` or
+  `defaultEvent`.
+- Randomness: there is no injectable RNG. Use `vi.spyOn(Math, 'random')`; the order of
+  `Math.random()` calls in `stepGame` is part of its contract (see
+  [`use-game-state.md`](use-game-state.md)).
+- Shared test helpers live in `src/test/`.
+
 ### Playwright setup
 - `playwright.config.js`: specs run against the **production build** — the `webServer` entry runs
   `npm run build` then `vite preview` on `http://127.0.0.1:4173` (`--strictPort`; `127.0.0.1`

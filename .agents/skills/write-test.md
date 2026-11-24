@@ -22,7 +22,7 @@ There are no automated tests. All verification is manual in the browser.
    - What happens at level start (fresh state)?
    - What happens when money hits $0?
    - What happens when lives hit 0?
-   - Does the fix survive a level transition (state re-initialised via `getInitialState(nextLevel)`)?
+   - Does the fix survive a level transition (state re-initialised via `getInitialState(event, nextLevel)`)?
 
 6. **Test both players** — groom (arrow keys move, ↑/↓ ammo, Space shoot) and bride (A/D move, W shoot, S ammo) independently.
 
@@ -42,4 +42,4 @@ There are no automated tests. All verification is manual in the browser.
 ## Tip: Speed up manual testing
 - Press **N** (when all required items are acquired) to fast-forward row advances.
 - Use browser DevTools → Sources to set a breakpoint in `useGameState.js` update loop to inspect live state.
-- To test a specific level, temporarily set `currentLevel` in `getInitialState()` default arg.
+- To test a specific level, temporarily change the `levelIndex` default of `getInitialState(event, levelIndex)`.
