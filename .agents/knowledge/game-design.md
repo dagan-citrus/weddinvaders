@@ -24,9 +24,13 @@ Two-player cooperative Space Invaders-style game. The **Bride** (bottom) and **G
 |------|-----|------|--------|
 | 💵 Cash | `cash` | $100/shot (deducted from `money`) | Damages purchasable items (HP = price × priceScale) |
 | 💌 Invite | `invite` | 1 envelope | Hits `guest` items → guest attends, brings $100–$300 random gift |
-| 💕 Heart | `heart` | 1 heart | Hits `parent_bride`/`parent_groom` → family donates $300–$500 random |
+| 💕 Heart | `heart` | 1 heart | Hits "family" items — any income item that needs hearts (`parent_bride`/`parent_groom` in the default event) → family donates $300–$500 random |
 
-## Item Types (defined in `src/constants.js` `WEDDING_ITEMS` — see [`knowledge/constants.md`](constants.md))
+## Item Types (the default event's data — `items` in `src/events/defaultEvent.js`; schema in `src/events/eventConfig.js`)
+Items are per-event. The engine keys its rules on item *data*, not ids: an income item is "family"
+when its `ammoRequired` is `heart` (otherwise a guest), and a trap is any item with
+`incomeType: 'mine'`, which spawns only on levels with `hasMines`.
+
 | ID | Emoji | Type | Notes |
 |----|-------|------|-------|
 | `rings` | 💍 | purchase (required) | Always required |
@@ -43,13 +47,13 @@ Two-player cooperative Space Invaders-style game. The **Bride** (bottom) and **G
 | `hourglass` | ⏳ | time (cash ammo) | Rare; slows row-advance pace for `HOURGLASS_SLOW_SECONDS` (15s) |
 
 ### Spawn Probability
-Every item template has a `spawnWeight` in `WEDDING_ITEMS` (`constants.js`); `spawnItem()`
+Every item template has a `spawnWeight` (default `1` when omitted); `spawnItem()`
 (`useGameState.js`'s `pickWeighted()`) does a cumulative-weight random pick, not a uniform one.
 Purchasable items (rings/officiant/catering/flowers/suit/cake) are weight `10` (most common),
 `guest` is `5`, `parent_bride`/`parent_groom` are `2` (rare), `discount`/`mine` are `3`, and the
 new `hourglass` is `2` (rare, same tier as family).
 
-## Level Structure (`src/levels.js`)
+## Level Structure (the default event's data — `levels` in `src/events/defaultEvent.js`)
 5 levels with increasing difficulty:
 
 | Level | Name | Required Items | money | priceScale | itemSpeed | hasMines |

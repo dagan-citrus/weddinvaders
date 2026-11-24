@@ -6,11 +6,11 @@ import {
   BULLET_WIDTH, BULLET_HEIGHT,
   ITEM_WIDTH, ITEM_HEIGHT,
   AMMO_META, AMMO_ORDER,
-  WEDDING_ITEMS,
 } from './constants';
-import { LEVELS } from './levels';
 
 // ── helpers ─────────────────────────────────────────────────────────────────
+
+function findItem(event, id) { return event.items.find(item => item.id === id); }
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -121,7 +121,7 @@ function drawBullet(ctx, b) {
 
 function drawItem(ctx, item) {
   const { x, y, templateId, label, emoji, price, maxPrice, essential, flashTimer,
-          incomeType, incomeAmount } = item;
+          incomeType, incomeAmount, ammoRequired } = item;
 
   const flashing = flashTimer > 0 && Math.floor(flashTimer / 2) % 2 === 0;
   ctx.globalAlpha = flashing ? 0.35 : 1;
@@ -165,7 +165,7 @@ function drawItem(ctx, item) {
     ctx.font = 'bold 10px monospace'; ctx.fillStyle = '#4caf50'; ctx.textAlign = 'center';
     ctx.fillText(`+$${incomeAmount}`, x + ITEM_WIDTH / 2, y + ITEM_HEIGHT - 3);
     // Ammo-hint badge (top-right corner)
-    const ammoHint = (templateId === 'parent_bride' || templateId === 'parent_groom') ? '💕' : '💌';
+    const ammoHint = (AMMO_META[ammoRequired] ?? AMMO_META.invite).label;
     ctx.font = '10px Arial';
     ctx.fillText(ammoHint, x + ITEM_WIDTH - 9, y + 11);
 
@@ -193,9 +193,9 @@ function drawItem(ctx, item) {
 
 // ── side panel ───────────────────────────────────────────────────────────────
 
-function drawPanel(ctx, state) {
+function drawPanel(ctx, state, event) {
   const { acquiredItems, currentLevel, score = 0 } = state;
-  const level  = LEVELS[currentLevel] ?? LEVELS[0];
+  const level  = event.levels[currentLevel] ?? event.levels[0];
   const panelX = GAME_WIDTH;
   const midX   = panelX + PANEL_WIDTH / 2;
 
@@ -252,7 +252,7 @@ function drawPanel(ctx, state) {
   const seen = new Set();
   const requiredItems = level.required
     .filter(id => { if (seen.has(id)) return false; seen.add(id); return true; })
-    .map(id => WEDDING_ITEMS.find(w => w.id === id))
+    .map(id => findItem(event, id))
     .filter(Boolean);
 
   const REQ_START_Y  = 72;
@@ -303,7 +303,7 @@ function drawPanel(ctx, state) {
   // ── Optional (extras) section ─────────────────────────────────────────
   // Only show purchasable optional items (incomeType === null / undefined)
   const optionalDefs = (level.optional ?? [])
-    .map(id => WEDDING_ITEMS.find(w => w.id === id))
+    .map(id => findItem(event, id))
     .filter(w => w && !w.incomeType);
 
   if (optionalDefs.length > 0) {
@@ -437,9 +437,9 @@ function drawAdvanceAnim(ctx, anim) {
 
 // ── meeting scene (players physically meet) ──────────────────────────────────
 
-function drawMeeting(ctx, state, assets) {
+function drawMeeting(ctx, state, assets, event) {
   const { meetingTimer, currentLevel, players } = state;
-  const isLastLevel = currentLevel >= LEVELS.length - 1;
+  const isLastLevel = currentLevel >= event.levels.length - 1;
 
   // Blue gradient background (play area)
   const grad = ctx.createLinearGradient(0, 0, 0, PLAY_HEIGHT);
@@ -520,7 +520,7 @@ function drawMeeting(ctx, state, assets) {
       ctx.fillStyle   = '#ffd700';
       ctx.shadowColor = '#ffd700';
       ctx.shadowBlur  = 22;
-      ctx.fillText("🎉  MARRIED!  🎉", GAME_WIDTH / 2, PLAY_HEIGHT - 55);
+      ctx.fillText(event.messages.finalMeeting, GAME_WIDTH / 2, PLAY_HEIGHT - 55);
     } else {
       ctx.font        = 'bold 34px monospace';
       ctx.fillStyle   = '#ffd700';
@@ -529,7 +529,7 @@ function drawMeeting(ctx, state, assets) {
       ctx.fillText('💒  Level Complete!  💒', GAME_WIDTH / 2, PLAY_HEIGHT - 65);
       ctx.shadowBlur = 0;
 
-      const nextLevel = LEVELS[currentLevel + 1];
+      const nextLevel = event.levels[currentLevel + 1];
       if (nextLevel) {
         ctx.font      = '17px Arial';
         ctx.fillStyle = '#ccc';
@@ -557,7 +557,7 @@ function drawMeeting(ctx, state, assets) {
 
 // ── title screen ─────────────────────────────────────────────────────────────
 
-function drawTitle(ctx) {
+function drawTitle(ctx, event) {
   const grad = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
   grad.addColorStop(0,   BG_TOP);
   grad.addColorStop(0.5, BG_MID);
@@ -574,15 +574,15 @@ function drawTitle(ctx) {
   ctx.fillStyle   = '#fff';
   ctx.font        = 'bold 58px monospace';
   ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 24;
-  ctx.fillText("WEDDIN'VADERS", GAME_WIDTH / 2, 140);
+  ctx.fillText(event.messages.title, GAME_WIDTH / 2, 140);
   ctx.shadowBlur = 0;
 
   ctx.font = '20px Arial'; ctx.fillStyle = '#ffd700';
-  ctx.fillText('Buy the wedding of your dreams!', GAME_WIDTH / 2, 188);
+  ctx.fillText(event.messages.tagline, GAME_WIDTH / 2, 188);
 
   const lines = [
-    '👰 Bride  —  A/D move   ·   S ammo   ·   W shoot',
-    '🤵 Groom  —  ←/→ move   ·   ↑/↓ ammo   ·   Space shoot',
+    `👰 ${event.names.bride}  —  A/D move   ·   S ammo   ·   W shoot`,
+    `🤵 ${event.names.groom}  —  ←/→ move   ·   ↑/↓ ammo   ·   Space shoot`,
     '',
     '💵 Cash shoots at items to buy them',
     '💌 Send invites to guests — they attend & bring gift money!',
@@ -601,20 +601,20 @@ function drawTitle(ctx) {
     ctx.shadowBlur = 0;
   });
 
-  drawPanel(ctx, { acquiredItems: [], currentLevel: 0 });
+  drawPanel(ctx, { acquiredItems: [], currentLevel: 0 }, event);
 }
 
 // ── overlays ─────────────────────────────────────────────────────────────────
 
-function drawOverlay(ctx, state, assets) {
+function drawOverlay(ctx, state, assets, event) {
   const { phase, currentLevel, acquiredItems, lives } = state;
-  const level = LEVELS[currentLevel] ?? LEVELS[0];
+  const level = event.levels[currentLevel] ?? event.levels[0];
 
   ctx.fillStyle = 'rgba(0,0,0,0.78)';
   ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
   if (phase === 'levelComplete') {
-    const nextLevel = LEVELS[currentLevel + 1];
+    const nextLevel = event.levels[currentLevel + 1];
     ctx.textAlign   = 'center';
     ctx.font        = 'bold 42px monospace';
     ctx.fillStyle   = '#ffd700';
@@ -641,7 +641,7 @@ function drawOverlay(ctx, state, assets) {
     ctx.fillStyle   = '#ffd700';
     ctx.shadowColor = '#ffd700';
     ctx.shadowBlur  = 24;
-    ctx.fillText("🎉 YOU'RE MARRIED! 🎉", GAME_WIDTH / 2, GAME_HEIGHT - 110);
+    ctx.fillText(event.messages.gameComplete, GAME_WIDTH / 2, GAME_HEIGHT - 110);
     ctx.shadowBlur = 0;
     ctx.font = '18px Arial'; ctx.fillStyle = '#ccc';
     ctx.fillText('Press any key to return to title', GAME_WIDTH / 2, GAME_HEIGHT - 70);
@@ -652,7 +652,7 @@ function drawOverlay(ctx, state, assets) {
     ctx.fillStyle   = '#f44336';
     ctx.shadowColor = '#f44336';
     ctx.shadowBlur  = 24;
-    ctx.fillText('💔 Wedding Failed!', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 65);
+    ctx.fillText(event.messages.lost, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 65);
     ctx.shadowBlur = 0;
 
     // Explain why — much clearer for the player
@@ -666,7 +666,7 @@ function drawOverlay(ctx, state, assets) {
       if (uniqueMissing.length > 0) {
         const labels = uniqueMissing
           .map(id => {
-            const w = WEDDING_ITEMS.find(w => w.id === id);
+            const w = findItem(event, id);
             return w ? `${w.emoji} ${w.label}` : id;
           })
           .join('  ·  ');
@@ -688,15 +688,22 @@ function drawOverlay(ctx, state, assets) {
 
 // ── main render entry point ───────────────────────────────────────────────────
 
-export function render(ctx, state, assets) {
+/**
+ * Draws one frame. Pure: reads its arguments, writes only to `ctx`.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object} state
+ * @param {{ bride: HTMLImageElement, groom: HTMLImageElement, couple: HTMLImageElement } | null} assets
+ * @param {import('./events/eventConfig').EventConfig} event
+ */
+export function render(ctx, state, assets, event) {
   const { phase, players, bullets, items, messages, advanceAnim } = state;
 
-  if (phase === 'title') { drawTitle(ctx); return; }
+  if (phase === 'title') { drawTitle(ctx, event); return; }
 
   // ── Meeting scene: players physically meet ─────────────────────────────────
   if (phase === 'meeting') {
-    drawMeeting(ctx, state, assets);
-    drawPanel(ctx, state);
+    drawMeeting(ctx, state, assets, event);
+    drawPanel(ctx, state, event);
     return;
   }
 
@@ -712,10 +719,10 @@ export function render(ctx, state, assets) {
   drawMessages(ctx, messages);
   drawAdvanceAnim(ctx, advanceAnim);
   drawHUD(ctx, state);
-  drawPanel(ctx, state);
+  drawPanel(ctx, state, event);
 
   if (phase === 'levelComplete' || phase === 'gameComplete' || phase === 'lost') {
-    drawOverlay(ctx, state, assets);
-    drawPanel(ctx, state);  // keep checklist visible on top of overlay
+    drawOverlay(ctx, state, assets, event);
+    drawPanel(ctx, state, event);  // keep checklist visible on top of overlay
   }
 }
