@@ -40,6 +40,14 @@ Two-player cooperative Space Invaders-style game. The **Bride** (bottom) and **G
 | `parent_groom` | 👨‍👦 | income (heart ammo) | Groom-exclusive, gives $300–$500 |
 | `discount` | 🎀 | discount | Reduces remaining item prices by 30% |
 | `mine` | 💣 | trap | Explodes on contact, costs a life |
+| `hourglass` | ⏳ | time (cash ammo) | Rare; slows row-advance pace for `HOURGLASS_SLOW_SECONDS` (15s) |
+
+### Spawn Probability
+Every item template has a `spawnWeight` in `WEDDING_ITEMS` (`constants.js`); `spawnItem()`
+(`useGameState.js`'s `pickWeighted()`) does a cumulative-weight random pick, not a uniform one.
+Purchasable items (rings/officiant/catering/flowers/suit/cake) are weight `10` (most common),
+`guest` is `5`, `parent_bride`/`parent_groom` are `2` (rare), `discount`/`mine` are `3`, and the
+new `hourglass` is `2` (rare, same tier as family).
 
 ## Level Structure (`src/levels.js`)
 5 levels with increasing difficulty:
@@ -56,6 +64,14 @@ Two-player cooperative Space Invaders-style game. The **Bride** (bottom) and **G
 - **Win level**: All `required` items acquired when players meet (or time runs out with money ≥ 0).
 - **Lose**: Lives reach 0, OR players meet without all required items, OR money goes negative.
 - **Starting money must be a multiple of $100** (cash ammo costs $100/shot — leftover cents are unspendable).
+
+## Row-Advance Pacing
+- Once all `required` items for the level are acquired, row-advance speeds up by
+  `ROW_ADVANCE_SPEEDUP` (`constants.js`, default `2.5×`) — this limits how long players can keep
+  farming optional items/money instead of finishing the level.
+- The `hourglass` item temporarily halves whatever the current rate is (including during the
+  speedup) for `HOURGLASS_SLOW_SECONDS` (15s) — a player-earned reprieve, not a hard freeze. The
+  two effects compose rather than override each other; see `use-game-state.md`.
 
 ## Key Constraints
 - Items spawn on rows between the two players (never on their rows).
