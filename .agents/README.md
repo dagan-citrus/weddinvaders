@@ -15,10 +15,10 @@ Space Invaders-style cooperative two-player browser game built with React + Vite
 
 | File | Component | Purpose |
 |------|-----------|---------|
-| [`knowledge/use-game-state.md`](knowledge/use-game-state.md) | `useGameState()` — `src/useGameState.js` | Core game-logic hook: state, input, 60fps update loop, collisions, phase transitions |
-| [`knowledge/renderer.md`](knowledge/renderer.md) | `render()` + draw functions — `src/renderer.js` | All canvas drawing, pure `(ctx, state, assets) → void` |
-| [`knowledge/game-jsx.md`](knowledge/game-jsx.md) | `Game` — `src/Game.jsx` | React shell orchestrating hooks, canvas, and controls |
-| [`knowledge/constants.md`](knowledge/constants.md) | `src/constants.js` | Shared dimensions, timing, `WEDDING_ITEMS`/`AMMO_META` schema (highest fan-in module in the repo) |
+| [`knowledge/use-game-state.md`](knowledge/use-game-state.md) | `useGameState(event)` — `src/useGameState.js` | Core game logic (pure `stepGame` + hook): state, input, 60fps update loop, collisions, phase transitions |
+| [`knowledge/renderer.md`](knowledge/renderer.md) | `render()` + draw functions — `src/renderer.js` | All canvas drawing, pure `(ctx, state, assets, event) → void` |
+| [`knowledge/game-jsx.md`](knowledge/game-jsx.md) | `Game` — `src/Game.jsx` | React shell for one event (`<Game event>`), orchestrating hooks, canvas, and controls |
+| [`knowledge/constants.md`](knowledge/constants.md) | `src/constants.js` | Shared engine dimensions, timing and `AMMO_META` (highest fan-in module in the repo); per-event items and levels live in `src/events/` |
 
 ## Skill Files
 

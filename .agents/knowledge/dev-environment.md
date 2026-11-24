@@ -36,12 +36,12 @@ npm run e2e      # Playwright e2e against the production build (builds + serves 
 `vite.config.js` — `@vitejs/plugin-react` plus the Vitest `test` block (jsdom, `src/test/setup.js`, `src/**/*.test.{js,jsx}`). `defineConfig` is imported from `vitest/config`. No custom aliases or env vars required.
 
 ## Static Assets
-PNG images (`bride-nobg.png`, `groom-nobg.png`, `couple-nobg.png`) live in `src/assets/` and are imported via `useAssets.js`. Vite handles asset hashing automatically.
+PNG images (`bride-nobg.png`, `groom-nobg.png`, `couple-nobg.png`) live in `src/assets/` and are imported by the default event module, `src/events/defaultEvent.js`, which carries their URLs in `event.images`; `useAssets(images)` only loads the URLs it is given. Vite handles asset hashing automatically.
 
 ## No environment variables required.
 
 ## Gotchas
 - The game loop runs at ~60 fps via `requestAnimationFrame` — **never** add `console.log` inside the game loop (it tanks performance).
 - `CANVAS_WIDTH = 910` (800 play + 110 panel) — ensure the canvas element uses `CANVAS_WIDTH`, not `GAME_WIDTH`.
-- All game constants are in `src/constants.js` — do not hardcode magic numbers elsewhere.
+- All engine constants are in `src/constants.js` — do not hardcode magic numbers elsewhere. Per-event data (items, levels, names, messages, images) lives in an event module under `src/events/`, never in game code.
 - ESLint enforces React Hooks rules — all custom hooks must start with `use`.
