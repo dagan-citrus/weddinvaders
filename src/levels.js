@@ -87,11 +87,12 @@ export const LEVELS = [
   },
 ];
 
-// Returns the subset of WEDDING_ITEMS that can spawn in this level
-export function getSpawnPool(level) {
+// Returns the subset of the event's items that can spawn in this level, in item order
+export function getSpawnPool(level, items) {
   const allowed = new Set([...level.required, ...level.optional]);
-  if (level.hasMines) allowed.add('mine');
-  return WEDDING_ITEMS.filter(w => allowed.has(w.id));
+  return items.filter(item =>
+    allowed.has(item.id) || (level.hasMines && item.incomeType === 'mine')
+  );
 }
 
 // True when every required item has been acquired
