@@ -1,18 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { defaultEvent } from './defaultEvent';
 import { validateEvent } from './eventConfig';
 import { isValidSlug, isReservedSlug } from './slug';
-import { WEDDING_ITEMS } from '../constants';
-import { LEVELS } from '../levels';
+import { GOLDEN_DEFAULT_ITEMS, GOLDEN_DEFAULT_LEVELS } from '../test/gameFixtures';
 import brideImage from '../assets/bride-nobg.png';
 import groomImage from '../assets/groom-nobg.png';
 import coupleImage from '../assets/couple-nobg.png';
-
-// `new URL()` is jsdom's in this environment, which `fileURLToPath` rejects; pass the string.
-const RENDERER_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', 'renderer.js');
 
 const EXPECTED_MESSAGES = {
   title: "WEDDIN'VADERS",
@@ -41,12 +34,13 @@ describe('defaultEvent', () => {
     expect(defaultEvent.names).toEqual({ bride: 'Bride', groom: 'Groom' });
   });
 
-  it('test_default_items_same_reference', () => {
-    expect(defaultEvent.items).toBe(WEDDING_ITEMS);
+  // The default event owns the game's original data: same order, keys and values.
+  it('test_default_items_golden', () => {
+    expect(defaultEvent.items).toStrictEqual(GOLDEN_DEFAULT_ITEMS);
   });
 
-  it('test_default_levels_same_reference', () => {
-    expect(defaultEvent.levels).toBe(LEVELS);
+  it('test_default_levels_golden', () => {
+    expect(defaultEvent.levels).toStrictEqual(GOLDEN_DEFAULT_LEVELS);
   });
 
   it('test_default_items_snapshot_guard', () => {
@@ -76,16 +70,5 @@ describe('defaultEvent', () => {
 
   it('test_default_messages', () => {
     expect(defaultEvent.messages).toEqual(EXPECTED_MESSAGES);
-  });
-
-  // Guards the temporary second copy of the literals (design DD4); remove in T3.
-  it('test_default_messages_match_renderer', () => {
-    const rendererSource = readFileSync(RENDERER_FILE, 'utf8');
-    for (const message of Object.values(EXPECTED_MESSAGES)) {
-      expect(rendererSource).toContain(message);
-    }
-    for (const message of Object.values(defaultEvent.messages)) {
-      expect(rendererSource).toContain(message);
-    }
   });
 });
