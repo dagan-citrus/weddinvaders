@@ -9,7 +9,7 @@ Space Invaders-style cooperative two-player browser game built with React + Vite
 | [`knowledge/architecture.md`](knowledge/architecture.md) | Module overview, data flow, game loop, key entry points |
 | [`knowledge/dev-environment.md`](knowledge/dev-environment.md) | Prerequisites, run/build commands, gotchas |
 | [`knowledge/game-design.md`](knowledge/game-design.md) | Game phases, ammo types, item system, level structure, win/lose rules |
-| [`knowledge/testing.md`](knowledge/testing.md) | How to verify changes (no automated tests — manual + preview server) |
+| [`knowledge/testing.md`](knowledge/testing.md) | How to verify changes: Vitest component tests, Playwright e2e, CI, plus the manual gameplay checklist |
 
 ## Component Files
 
