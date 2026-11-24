@@ -134,6 +134,46 @@ export function useGameState() {
       typeof updater === 'function' ? updater(stateRef.current) : updater;
   };
 
+  // ── helpers that update state ─────────────────────────────────────────
+
+  const cycleAmmoFor = useCallback((role, dir) => {
+    setState(s => {
+      const cur  = s.players[role].selectedAmmo;
+      const idx  = AMMO_ORDER.indexOf(cur);
+      const next = AMMO_ORDER[(idx + dir + AMMO_ORDER.length) % AMMO_ORDER.length];
+      return { ...s, players: { ...s.players, [role]: { ...s.players[role], selectedAmmo: next } } };
+    });
+  }, []);
+
+  const shoot = useCallback((role) => {
+    setState(s => {
+      if (s.phase !== 'playing') return s;
+      const player   = s.players[role];
+      if (!player.alive) return s;
+
+      const ammoType = player.selectedAmmo;
+      if (ammoType === 'cash'   && s.money        < 100) return s;
+      if (ammoType === 'invite' && s.ammo.invite  <= 0)  return s;
+      if (ammoType === 'heart'  && s.ammo.heart   <= 0)  return s;
+
+      const vy = role === 'groom' ? BULLET_SPEED : -BULLET_SPEED;
+      const bx = player.x + PLAYER_WIDTH  / 2 - BULLET_WIDTH  / 2;
+      const by = role === 'groom' ? player.y + PLAYER_HEIGHT : player.y - BULLET_HEIGHT;
+
+      const newMoney = ammoType === 'cash' ? s.money - 100 : s.money;
+      const newAmmo  = ammoType !== 'cash'
+        ? { ...s.ammo, [ammoType]: s.ammo[ammoType] - 1 }
+        : s.ammo;
+
+      return {
+        ...s,
+        money:   newMoney,
+        ammo:    newAmmo,
+        bullets: [...s.bullets, { id: Math.random().toString(36).slice(2), x: bx, y: by, vy, ammoType, role }],
+      };
+    });
+  }, []);
+
   // ── keyboard input ────────────────────────────────────────────────────
   useEffect(() => {
     const scrollKeys = new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space']);
@@ -211,47 +251,7 @@ export function useGameState() {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('keyup',   onKey);
     };
-  }, []);
-
-  // ── helpers that update state ─────────────────────────────────────────
-
-  const cycleAmmoFor = (role, dir) => {
-    setState(s => {
-      const cur  = s.players[role].selectedAmmo;
-      const idx  = AMMO_ORDER.indexOf(cur);
-      const next = AMMO_ORDER[(idx + dir + AMMO_ORDER.length) % AMMO_ORDER.length];
-      return { ...s, players: { ...s.players, [role]: { ...s.players[role], selectedAmmo: next } } };
-    });
-  };
-
-  const shoot = useCallback((role) => {
-    setState(s => {
-      if (s.phase !== 'playing') return s;
-      const player   = s.players[role];
-      if (!player.alive) return s;
-
-      const ammoType = player.selectedAmmo;
-      if (ammoType === 'cash'   && s.money        < 100) return s;
-      if (ammoType === 'invite' && s.ammo.invite  <= 0)  return s;
-      if (ammoType === 'heart'  && s.ammo.heart   <= 0)  return s;
-
-      const vy = role === 'groom' ? BULLET_SPEED : -BULLET_SPEED;
-      const bx = player.x + PLAYER_WIDTH  / 2 - BULLET_WIDTH  / 2;
-      const by = role === 'groom' ? player.y + PLAYER_HEIGHT : player.y - BULLET_HEIGHT;
-
-      const newMoney = ammoType === 'cash' ? s.money - 100 : s.money;
-      const newAmmo  = ammoType !== 'cash'
-        ? { ...s.ammo, [ammoType]: s.ammo[ammoType] - 1 }
-        : s.ammo;
-
-      return {
-        ...s,
-        money:   newMoney,
-        ammo:    newAmmo,
-        bullets: [...s.bullets, { id: Math.random().toString(36).slice(2), x: bx, y: by, vy, ammoType, role }],
-      };
-    });
-  }, []);
+  }, [cycleAmmoFor, shoot]);
 
   // ── main update (runs every frame) ────────────────────────────────────
 
@@ -446,16 +446,15 @@ export function useGameState() {
 
   // ── game loop ─────────────────────────────────────────────────────────
 
-  const loop = useCallback(() => {
-    update();
-    renderCallbackRef.current?.(stateRef.current);
-    rafRef.current = requestAnimationFrame(loop);
-  }, [update]);
-
   const startLoop = useCallback(() => {
+    function loop() {
+      update();
+      renderCallbackRef.current?.(stateRef.current);
+      rafRef.current = requestAnimationFrame(loop);
+    }
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(loop);
-  }, [loop]);
+  }, [update]);
 
   const stopLoop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);

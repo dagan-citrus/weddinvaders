@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'playwright-report', 'test-results']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -25,5 +25,15 @@ export default defineConfig([
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
+  },
+  {
+    // Node-side tooling: Playwright specs and the build/test configs
+    files: ['e2e/**/*.js', 'playwright.config.js', 'vite.config.js'],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    // Test files export helpers and render components outside the HMR rules
+    files: ['src/test/**', '**/*.test.{js,jsx}'],
+    rules: { 'react-refresh/only-export-components': 'off' },
   },
 ])

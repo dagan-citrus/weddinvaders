@@ -23,15 +23,15 @@ Design Decisions") seeded by `getInitialState(levelIndex = 0)` (`useGameState.js
 |---|---|---|
 | `getInitialState(levelIndex)` | 97 | Builds a fresh state object for a given level (money, ammo, players, timers, `slowTimer`). Authoritative shape — a field missing here becomes `undefined` after a level restart. |
 | `useGameState()` | 125 | The hook itself; returns `{ getState, startLoop, stopLoop, setRenderCallback, handleAction }`. |
-| `onKey(e)` (internal, in the hook's keyboard effect) | 141 | Routes `keydown`/`keyup`. Non-`playing` phases (title/meeting/levelComplete/gameComplete/lost) advance on any key; while `playing`, dispatches shoot/cycle-ammo. |
-| `shoot(role)` | 227 | Validates ammo/money, deducts cost, spawns a bullet. Called for both keyboard shortcuts and `handleAction({type:'SHOOT'})`. |
+| `onKey(e)` (internal, in the hook's keyboard effect) | 181 | Routes `keydown`/`keyup`. Non-`playing` phases (title/meeting/levelComplete/gameComplete/lost) advance on any key; while `playing`, dispatches shoot/cycle-ammo. |
+| `cycleAmmoFor(role, dir)` / `shoot(role)` | 139 / 148 | Both are stable `useCallback`s declared **above** the keyboard effect, which lists them as deps (the react-hooks lint rules reject using them before declaration). `shoot` validates ammo/money, deducts cost, spawns a bullet; called for both keyboard shortcuts and `handleAction({type:'SHOOT'})`. |
 | `update()` | 258 | Runs every animation frame: row advance (rate-adjusted, see below), player movement (`moveX`), bullet travel, item spawn/movement, escaped-item life loss, **bullet↔item collision** (inline, not a separate function), win/lose phase transition. |
-| `loop()` / `startLoop()` / `stopLoop()` | 449–460 | `requestAnimationFrame` driver; calls `update()` then the render callback registered via `setRenderCallback`. |
-| `handleAction(action)` | 466 | Dispatch table for UI-originated actions: `START`, `RESTART`, `NEXT_LEVEL`, `SHOOT`, `SELECT_AMMO` — used by `Game.jsx`'s click handler and on-screen mobile buttons. |
+| `startLoop()` / `stopLoop()` | 449–461 | `requestAnimationFrame` driver. `startLoop` owns an inner `function loop()` declaration (a self-referencing `useCallback` fails the react-hooks lint rule) that calls `update()` then the render callback registered via `setRenderCallback`. |
+| `handleAction(action)` | 465 | Dispatch table for UI-originated actions: `START`, `RESTART`, `NEXT_LEVEL`, `SHOOT`, `SELECT_AMMO` — used by `Game.jsx`'s click handler and on-screen mobile buttons. |
 | `spawnItem(groomRow, brideRow, level, acquiredItems)` (internal) | 48 | Builds one flying item from the level's weighted spawn pool; randomizes `incomeAmount` for guest/family items. |
 | `pickWeighted(pool)` (internal) | 38 | Cumulative-weight random pick over a pool's `spawnWeight` fields — used by `spawnItem()` instead of a uniform pick. See `constants.md`'s `WEDDING_ITEMS.spawnWeight`. |
 
-### Row-advance rate (inside `update()`, ~lines 279–284)
+### Row-advance rate (inside `update()`, ~lines 280–286)
 ```js
 const requiredDone = isLevelComplete(level, acquiredItems); // this frame's incoming items
 let advanceRate = requiredDone ? ROW_ADVANCE_SPEEDUP : 1;
@@ -43,7 +43,7 @@ the level's required items are all acquired, tempered (halved) while an hourglas
 `slowTimer = HOURGLASS_SLOW_SECONDS * FPS` when an hourglass item is shot down. See
 `game-design.md`'s "Row-Advance Pacing".
 
-### Controls (verified against `onKey`/`moveX`, `useGameState.js:186–191,296–297`)
+### Controls (verified against `onKey`/`moveX`, `useGameState.js:238–244,316–317`)
 - **Bride**: `KeyA`/`KeyD` move, `KeyW` shoot, `KeyS` cycle ammo.
 - **Groom**: `ArrowLeft`/`ArrowRight` move, `ArrowUp`/`ArrowDown` cycle ammo, `Space`/`Enter` shoot.
 - These are the reverse of what an earlier version of `game-design.md`/`testing.md` claimed — fixed as part of this pass; re-verify here (not from memory) if they're ever in question again.
@@ -53,4 +53,4 @@ the level's required items are all acquired, tempered (halved) while an hourglas
 - Consumes `LEVELS`, `getSpawnPool()`, `isLevelComplete()` from `src/levels.js` (documented inline in [`game-design.md`](game-design.md), not split into its own component file).
 - Constructed by and handed to `Game.jsx` — see [`game-jsx.md`](game-jsx.md).
 - Its output state is the sole input to `render()` in `src/renderer.js` — see [`renderer.md`](renderer.md).
-- Exercised by the manual checklist in [`testing.md`](testing.md) and the [`bug-fix.md`](../skills/bug-fix.md) / [`new-feature.md`](../skills/new-feature.md) skills.
+- Exercised by the smoke tests and manual checklist in [`testing.md`](testing.md) and the [`bug-fix.md`](../skills/bug-fix.md) / [`new-feature.md`](../skills/new-feature.md) skills.
