@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 // play exactly as the game did before it became config-driven.
 
 /** Where the default event's game is served. */
-const GAME_PATH = '/';
+const GAME_PATH = '/DemoWedding';
 
 const SETTLE_MS = 500;
 const HTTP_OK = 200;
