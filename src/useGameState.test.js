@@ -725,4 +725,91 @@ describe('useGameState hook', () => {
     keyDown('KeyX');
     expect(state()).toMatchObject({ phase: 'title', money: 1000, score: 0, time: 60 });
   });
+
+  // ── transitions the level-1 playthroughs do not reach (R9, R10) ────────────
+
+  /** Runs frames until the phase leaves 'playing' (bounded), and returns the frames run. */
+  function stepUntilNotPlaying(driver, state, maxFrames) {
+    let frames = 0;
+    while (state().phase === 'playing' && frames < maxFrames) {
+      driver.step(1);
+      frames++;
+    }
+    return frames;
+  }
+
+  /** Two levels; level 1 times out after 3 s, long before the rows can meet. */
+  function makeTimedTwoLevelEvent() {
+    const [level] = makeEvent().levels;
+    return makeEvent({
+      levels: [
+        { ...level, gameDuration: 3, rowAdvance: 1000 },
+        { ...level, id: 2, name: 'Two', money: 700, gameDuration: 45 },
+      ],
+    });
+  }
+
+  /** Starts the game and buys the only required item (same steps as the single-level playthrough). */
+  function startAndBuyRings(event) {
+    const game = mountHook(event);
+    keyDown('KeyX');
+    game.driver.step(146);
+    keyDown('Space', 5);
+    game.driver.step(1);
+    expect(game.state()).toMatchObject({ phase: 'playing', acquiredItems: ['rings'] });
+    return game;
+  }
+
+  it('test_hook_level_complete_any_key_starts_next_level', () => {
+    const event = makeTimedTwoLevelEvent();
+    const { driver, state } = startAndBuyRings(event);
+
+    stepUntilNotPlaying(driver, state, 60);
+    expect(state()).toMatchObject({ phase: 'levelComplete', currentLevel: 0, time: 0, frame: 180 });
+
+    keyDown('KeyX');
+    expect(state()).toEqual({ ...getInitialState(event, 1), phase: 'playing' });
+    expect(state()).toMatchObject({ currentLevel: 1, money: 700, time: 45 });
+  });
+
+  it('test_hook_level_complete_next_level_action', () => {
+    const event = makeTimedTwoLevelEvent();
+    const { driver, state, action } = startAndBuyRings(event);
+
+    stepUntilNotPlaying(driver, state, 60);
+    expect(state().phase).toBe('levelComplete');
+
+    action({ type: 'NEXT_LEVEL' });
+    expect(state()).toEqual({ ...getInitialState(event, 1), phase: 'playing' });
+  });
+
+  it('test_hook_last_level_meeting_next_level_action', () => {
+    const { driver, state, action } = startAndBuyRings(makeEvent());
+
+    keyDown('KeyN', 4);
+    driver.step(1);
+    expect(state().phase).toBe('meeting');
+
+    driver.step(79);
+    action({ type: 'NEXT_LEVEL' });
+    expect(state()).toMatchObject({ phase: 'meeting', meetingTimer: 79 });
+
+    driver.step(1);
+    action({ type: 'NEXT_LEVEL' });
+    expect(state()).toMatchObject({ phase: 'gameComplete', currentLevel: 0, score: 5000 });
+  });
+
+  it('test_hook_lost_only_key_r_restarts', () => {
+    const { driver, state } = mountHook(D);
+
+    keyDown('KeyX');
+    stepUntilNotPlaying(driver, state, 20000);
+    expect(state().phase).toBe('lost');
+
+    keyDown('KeyX');
+    expect(state().phase).toBe('lost');
+
+    keyDown('KeyR');
+    expect(state()).toEqual({ ...getInitialState(D, 0), phase: 'playing' });
+  });
 });
