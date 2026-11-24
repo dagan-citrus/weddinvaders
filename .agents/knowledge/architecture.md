@@ -19,11 +19,25 @@ src/
 ├── renderer.js       # Pure canvas drawing — render(ctx, state, assets)
 ├── pixelArt.js       # 8×8 pixel-sprite definitions + drawPixelSprite() — currently UNUSED (not imported anywhere)
 ├── useAssets.js      # Preloads bride/groom/couple PNG images
+├── siteConfig.js     # SITE_CONFIG (name, base URL, contact email) + buildSiteUrl() — the only place the hostname appears
+├── events/           # Event config model — one config per couple's customized game
+│   ├── index.js          # Public entry point: ALL_EVENTS, eventRegistry, re-exports
+│   ├── eventConfig.js    # EventConfig typedefs, validateEvent(), assertValidEvent(), EventConfigError, EVENT_ISSUE
+│   ├── slug.js           # normalizeSlug(), isValidSlug(), RESERVED_SLUGS, SITE_PAGE_SLUGS
+│   ├── registry.js       # createEventRegistry() — lookup by slug, slug availability, public listing
+│   ├── eventUrl.js       # getEventPath(), buildEventUrl()
+│   └── defaultEvent.js   # The default/demo event (slug DemoWedding), built from WEDDING_ITEMS + LEVELS
 └── assets/
     ├── bride-nobg.png
     ├── groom-nobg.png
     └── couple-nobg.png
 ```
+
+`siteConfig.js` and `events/` are the event config model (design: `docs/designs/T2.md`).
+**The game does not consume them yet** — it still reads `constants.js` / `levels.js` directly
+until task T3 makes `Game` take an event config. Code outside `src/events/` imports from
+`./events` (the index), not from the individual modules. New events go in
+`src/events/<camelCaseName>Event.js` and are appended to `ALL_EVENTS`.
 
 ## Data Flow
 ```
