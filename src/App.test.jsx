@@ -1,11 +1,19 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
 import { CANVAS_WIDTH, GAME_HEIGHT, AMMO_ORDER } from './constants';
+import { createRecordingContext } from './test/recordingContext';
+import { installFrameDriver } from './test/frameDriver';
+import { DEFAULT_TITLE_TEXTS } from './test/gameFixtures';
 
 const CANVAS_SELECTOR = 'canvas.game-canvas';
 const SHOOT_BUTTONS_PER_GAME = 2; // one per player
 const PLAYER_COUNT = 2;
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe('App smoke (component)', () => {
   it('C1: mounts the game canvas with the configured dimensions', () => {
@@ -56,5 +64,20 @@ describe('App smoke (component)', () => {
 
     expect(() => unmount()).not.toThrow();
     expect(document.querySelector('canvas')).toBeNull();
+  });
+});
+
+describe('App renders the default event', () => {
+  it('test_app_renders_default_event', () => {
+    const driver = installFrameDriver();
+    const recording = createRecordingContext();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(recording.ctx);
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    render(<App />);
+    recording.reset();
+    driver.step(1);
+
+    expect(recording.texts).toEqual(DEFAULT_TITLE_TEXTS);
   });
 });
