@@ -5,21 +5,31 @@ import { render }       from './renderer';
 import { GAME_WIDTH, GAME_HEIGHT, CANVAS_WIDTH, AMMO_ORDER, AMMO_META } from './constants';
 import './Game.css';
 
-export default function Game() {
+/**
+ * The game for one event. Switching to an event with a different slug starts
+ * a fresh session (state, images, listeners and loop).
+ *
+ * @param {{ event: import('./events/eventConfig').EventConfig }} props
+ */
+export default function Game({ event }) {
+  return <GameSession key={event.slug} event={event} />;
+}
+
+function GameSession({ event }) {
   const canvasRef = useRef(null);
-  const assetsRef = useAssets();
-  const { getState, startLoop, stopLoop, setRenderCallback, handleAction } = useGameState();
+  const assetsRef = useAssets(event.images);
+  const { getState, startLoop, stopLoop, setRenderCallback, handleAction } = useGameState(event);
 
   useEffect(() => {
     setRenderCallback((state) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      render(ctx, state, assetsRef.current);
+      render(ctx, state, assetsRef.current, event);
     });
     startLoop();
     return () => stopLoop();
-  }, [startLoop, stopLoop, setRenderCallback, assetsRef]);
+  }, [startLoop, stopLoop, setRenderCallback, assetsRef, event]);
 
   const handleCanvasClick = useCallback(() => {
     const { phase } = getState();
@@ -92,8 +102,8 @@ export default function Game() {
         </div>
 
         <div className="key-legend">
-          <span>👰 Bride — A/D move · S ammo · W shoot</span>
-          <span>🤵 Groom — ←/→ move · ↑/↓ ammo · Space shoot</span>
+          <span>{`👰 ${event.names.bride} — A/D move · S ammo · W shoot`}</span>
+          <span>{`🤵 ${event.names.groom} — ←/→ move · ↑/↓ ammo · Space shoot`}</span>
         </div>
       </div>
     </div>
