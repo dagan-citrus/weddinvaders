@@ -43,6 +43,13 @@ change a user can see. Test files must lint clean too.
   run `playwright install` there. On another machine run `npx playwright install chromium` once.
   Bump the pin only together with the container's Playwright version.
 - Output goes to `playwright-report/` and `test-results/` (git-ignored, lint-ignored).
+- **The game is not at `/`.** `/` is the main site; game specs load an event path
+  (`/DemoWedding`, the default event). In component tests, set the path before rendering `<App />`
+  with `window.history.replaceState(null, '', path)` and reset it afterwards.
+- `vite preview` answers every unknown path with `index.html` and HTTP 200, so e2e proves the
+  router handles direct loads and reloads but **cannot** prove GitHub Pages serves `404.html`.
+  The build output is checked instead (`dist/404.html` equals `dist/index.html`), plus the
+  post-deploy check below.
 
 ### CI
 `.github/workflows/ci.yml` runs on every pull request (any base branch): job `check` runs lint,
@@ -55,7 +62,7 @@ The automated tests are smoke-level; gameplay rules are still verified by hand.
 ### Start the dev server
 ```bash
 npm run dev
-# → http://localhost:5173
+# → http://localhost:5173/DemoWedding   (the game; `/` is the main site)
 ```
 
 ### Manual test checklist (run after any gameplay change)
@@ -80,6 +87,14 @@ Open DevTools → Console. After each major change verify:
 npm run build   # must complete without errors
 npm run preview # spot-check the production build looks identical to dev
 ```
+The build must also produce `dist/404.html`, a byte copy of `dist/index.html` (the GitHub Pages
+deep-link fallback, written by the `spaFallback` plugin in `vite.config.js`).
+
+## Post-deploy check (deep links)
+After a deploy to GitHub Pages, on the live site open a site page (`/pricing`) and an event page
+(`/DemoWedding`) **directly** (typed URL, not via a link) and reload each: the right page must
+render. This is the only check that exercises the real `404.html` fallback. The HTTP status of
+those responses is 404 by design, so crawlers and link-preview bots may not treat them as pages.
 
 ## Lint
 ```bash

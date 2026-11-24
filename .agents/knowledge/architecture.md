@@ -9,7 +9,17 @@
 ```
 src/
 ├── main.jsx          # React root mount
-├── App.jsx           # Thin wrapper, renders <Game event={defaultEvent} />
+├── App.jsx           # Router shell: matches the URL path to a route and renders its page
+├── routes.js         # Route table (derived from SITE_PAGE_SLUGS) + pure matchRoute(), getDocumentTitle()
+├── navigation.js     # History API glue: usePathname(), navigate()
+├── Link.jsx          # <a> that navigates in-app without a document reload
+├── pages/            # One component per page
+│   ├── SiteLayout.jsx      # Frame of every main-site page: <nav aria-label="Site"> + <main data-route>
+│   ├── HomePage.jsx        # `/` (placeholder until the landing page is built)
+│   ├── PlaceholderPage.jsx # Site pages not built yet: heading + "Coming soon."
+│   ├── NotFoundPage.jsx    # "Event not found" + link to the main site
+│   ├── DemoPage.jsx        # `/demo`: <Game event={defaultEvent} />, no layout
+│   └── EventPage.jsx       # `/<slug>`: <Game event={event} />, no layout
 ├── Game.jsx          # React shell for one event: canvas element, keyboard/touch controls, game loop lifecycle
 ├── Game.css          # Layout styles (wrapper, mobile controls, key legend)
 ├── index.css         # Global reset
@@ -34,17 +44,43 @@ src/
 ```
 
 `siteConfig.js` and `events/` are the event config model (design: `docs/designs/T2.md`).
-**The game is driven by an event config** (design: `docs/designs/T3.md`): `App.jsx` imports an
-event and passes it to `<Game event>`; everything couple-specific — names, images, items, levels,
+**The game is driven by an event config** (design: `docs/designs/T3.md`): a page (`EventPage`,
+`DemoPage`) passes an event to `<Game event>`; everything couple-specific — names, images, items, levels,
 messages — is read from it. The game modules (`Game.jsx`, `useGameState.js`, `renderer.js`,
 `levels.js`, `useAssets.js`, `constants.js`) never import from `src/events/`; the event is an
 explicit argument all the way down. Code outside `src/events/` imports from
 `./events` (the index), not from the individual modules. New events go in
 `src/events/<camelCaseName>Event.js` and are appended to `ALL_EVENTS`.
 
+## Routing
+Design: `docs/designs/T4.md`. Hand-rolled, no router dependency.
+
+| Path | Renders |
+|------|---------|
+| `/` | `HomePage` inside `SiteLayout` — the main site, never the game |
+| `/<site page>` (the eight `SITE_PAGE_SLUGS`) | That page inside `SiteLayout` (`PlaceholderPage` until built); `/demo` is the exception: the game alone |
+| `/<slug>` of a registered event | `EventPage` — the game alone, no site layout |
+| anything else (unknown slug, more than one segment, undecodable) | `NotFoundPage` inside `SiteLayout` |
+
+- `matchRoute(pathname, registry)` in `routes.js` is the single matcher: pathname only (query and
+  hash are ignored and left in the URL), empty segments dropped (trailing/doubled slashes are
+  fine), site pages and slugs case-insensitive, a site page always wins over an event. The URL is
+  never rewritten.
+- **One route table.** `SITE_ROUTES` is derived from `SITE_PAGE_SLUGS` (`events/slug.js`), which is
+  also what reserves those names as event slugs. Adding a site page = add it to `SITE_PAGE_SLUGS`,
+  give it a title in `routes.js`, and add its component to `PAGE_COMPONENTS` in `App.jsx`.
+- `App.jsx` calls `matchRoute(usePathname())`, sets `document.title` from `getDocumentTitle()`, and
+  picks the page. Use `<Link to>` / `navigate(to)` for internal links — a plain `<a>` reloads the
+  document.
+- **Deep links on GitHub Pages:** the `spaFallback` plugin in `vite.config.js` copies
+  `dist/index.html` to `dist/404.html` on build. GitHub Pages serves `404.html` (with HTTP status
+  404) for any unknown path, and the SPA then routes it. `vite preview` and the dev server answer
+  unknown paths with `index.html` and 200 instead, so local runs cannot prove the Pages behaviour —
+  see the post-deploy check in [`testing.md`](testing.md).
+
 ## Data Flow
 ```
-App.jsx  ── event (from ./events) ──►  Game.jsx   → knowledge/game-jsx.md
+EventPage / DemoPage ── event (from ./events) ──►  Game.jsx   → knowledge/game-jsx.md
                                          └── <GameSession key={event.slug} event>
   ├── useGameState(event)    →  stateRef (never React state — avoids re-renders)
   │                                → knowledge/use-game-state.md
@@ -67,7 +103,8 @@ timing, `AMMO_META`) — see [`knowledge/constants.md`](constants.md) — and al
 - **Canvas dimensions**: `CANVAS_WIDTH = 910` (800 play area + 110 panel), `GAME_HEIGHT = 600` (540 play + 60 HUD).
 
 ## Entry Point
-`src/main.jsx` → `<App />` → `<Game />` — the canvas is the only meaningful DOM node.
+`src/main.jsx` → `<App />` → the page for the current path. On game pages (`/demo`, `/<slug>`) the
+canvas is the only meaningful DOM node.
 
 ## Component Files
 | File | Covers |
