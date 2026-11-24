@@ -98,8 +98,8 @@ export class EventConfigError extends Error {
   }
 }
 
-const NAME_KEYS   = ['bride', 'groom'];
-const IMAGE_KEYS   = ['bride', 'groom', 'couple'];
+const NAME_KEYS    = PLAYER_ROLES; // one name per player
+const IMAGE_KEYS   = [...PLAYER_ROLES, 'couple'];
 const MESSAGE_KEYS = ['title', 'tagline', 'finalMeeting', 'gameComplete', 'lost'];
 
 const EFFECT_INCOME   = 'income';
