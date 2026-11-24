@@ -28,7 +28,8 @@ const DEFAULT_TITLE_TEXTS = [
   'LEVEL 1', 'Save the Date', 'SCORE', '0', '💍', 'Rings', 'EXTRAS', '🎂', 'Cake',
 ];
 
-const LEVEL_1_HUD_TEXTS = ['💰 $9900', 'LEVEL 1', 'Save the Date', '💌×12  💕×4'];
+const LEVEL_1_AMMO_TEXT = '💌×12  💕×4';
+const LEVEL_1_HUD_TEXTS = ['💰 $9900', 'LEVEL 1', 'Save the Date', LEVEL_1_AMMO_TEXT];
 
 const BRIDE_LEGEND = '👰 Bride — A/D move · S ammo · W shoot';
 const GROOM_LEGEND = '🤵 Groom — ←/→ move · ↑/↓ ammo · Space shoot';
@@ -111,7 +112,9 @@ test.describe('Default event game (e2e)', () => {
     }
     await page.waitForTimeout(SETTLE_MS);
 
-    expect(await drawnTexts(page)).toContain(LEVEL_1_HUD_TEXTS[0]);
+    // The ammo counter proves the game is playing. The money text would not:
+    // Space and W each spend $100 of cash, possibly before the first playing frame is drawn.
+    expect(await drawnTexts(page)).toContain(LEVEL_1_AMMO_TEXT);
     expect(errors).toEqual([]);
   });
 });
