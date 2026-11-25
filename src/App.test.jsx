@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
 import { CANVAS_WIDTH, GAME_HEIGHT, AMMO_ORDER } from './constants';
@@ -10,12 +10,21 @@ const CANVAS_SELECTOR = 'canvas.game-canvas';
 const SHOOT_BUTTONS_PER_GAME = 2; // one per player
 const PLAYER_COUNT = 2;
 
+/** The default event's own address: the stable route that renders the game. */
+const GAME_PATH = '/DemoWedding';
+const HOME_PATH = '/';
+
+beforeEach(() => {
+  window.history.replaceState(null, '', GAME_PATH);
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  window.history.replaceState(null, '', HOME_PATH);
 });
 
-describe('App smoke (component)', () => {
+describe('App at an event path (component)', () => {
   it('C1: mounts the game canvas with the configured dimensions', () => {
     const { container } = render(<App />);
     const canvas = container.querySelector(CANVAS_SELECTOR);

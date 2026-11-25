@@ -11,7 +11,7 @@ render/game loop lifecycle, and translates DOM events (click, on-screen mobile b
 else in `src/` is either a hook it calls or a pure function it calls into.
 
 ## Construction
-Rendered by `App.jsx` as `<Game event={defaultEvent} />` → the only consumer is `src/main.jsx`'s React root.
+Rendered by `src/pages/EventPage.jsx` (`/<slug>`, the matched event) and `src/pages/DemoPage.jsx` (`/demo`, `defaultEvent`), which `App.jsx` picks by route.
 `event` is a required prop (an `EventConfig` from `src/events/`); `Game` has no default, so the
 engine can never fall back to the default couple by accident, and `Game.jsx` itself does not
 import from `src/events/`.
