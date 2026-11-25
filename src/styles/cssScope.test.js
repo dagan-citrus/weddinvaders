@@ -24,7 +24,7 @@ const CUSTOMIZE_CSS_FILE = 'pages/CustomizePage.css';
 const CUSTOMIZE_CLASS_PREFIX = '.customize-';
 const SITE_SCOPE_PREFIX = '.site ';
 
-const KEYFRAMES_RULE =/^@(-\w+-)?keyframes\b/;
+const KEYFRAMES_RULE = /^@(-\w+-)?keyframes\b/;
 
 /** Double quotes become single quotes, so either attribute-quoting style matches. */
 const normalizeQuotes = (text) => text.replaceAll('"', "'");
