@@ -1,0 +1,284 @@
+/* Shell and shared primitives of the main site. Every selector starts with
+   `.site` or `html[data-surface='site']`, so nothing here can reach the game. */
+
+html[data-surface='site'] body {
+  margin: 0;
+  background: var(--wv-bg);
+}
+
+.site,
+.site *,
+.site *::before,
+.site *::after {
+  box-sizing: border-box;
+}
+
+.site {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: var(--wv-font-body);
+  font-size: var(--wv-text-base);
+  line-height: 1.5;
+  color: var(--wv-text);
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Element defaults (placeholder and later pages rely on these) ── */
+
+.site h1,
+.site h2,
+.site h3 {
+  margin: 0 0 var(--wv-space-3);
+  font-family: var(--wv-font-display);
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.site h1 {
+  font-size: var(--wv-text-hero);
+  color: var(--wv-gold);
+  text-shadow: 0 0 24px rgba(255, 215, 0, 0.35);
+}
+
+.site h2 {
+  font-size: var(--wv-text-2xl);
+}
+
+.site h3 {
+  font-size: var(--wv-text-lg);
+}
+
+.site p {
+  margin: 0 0 var(--wv-space-3);
+  max-width: 65ch;
+  color: var(--wv-text-muted);
+}
+
+.site a {
+  color: var(--wv-link);
+  text-decoration: underline;
+}
+
+.site ul,
+.site ol {
+  margin: 0 0 var(--wv-space-3);
+  padding-left: var(--wv-space-4);
+}
+
+.site :focus-visible {
+  outline: 3px solid var(--wv-gold);
+  outline-offset: 2px;
+}
+
+/* ── Primitives ── */
+
+.site-container {
+  width: 100%;
+  max-width: var(--wv-container);
+  margin: 0 auto;
+  padding: 0 var(--wv-space-3);
+}
+
+.site-section {
+  padding: var(--wv-space-5) 0;
+}
+
+.site-card {
+  padding: var(--wv-space-4);
+  background: var(--wv-surface);
+  border: 1px solid var(--wv-border);
+  border-radius: var(--wv-radius);
+}
+
+.site-card > :last-child {
+  margin-bottom: 0;
+}
+
+.site a.site-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--wv-space-2) var(--wv-space-4);
+  border: 2px solid transparent;
+  border-radius: var(--wv-radius);
+  font-weight: bold;
+  text-align: center;
+  text-decoration: none;
+}
+
+.site a.site-btn-primary {
+  background: var(--wv-gold);
+  border-color: var(--wv-gold);
+  color: var(--wv-bg);
+  box-shadow: 0 4px 18px rgba(255, 215, 0, 0.25);
+}
+
+.site a.site-btn-secondary {
+  background: transparent;
+  border-color: var(--wv-pink);
+  color: var(--wv-text);
+}
+
+.site a.site-btn-primary:hover {
+  box-shadow: 0 4px 24px rgba(255, 215, 0, 0.45);
+}
+
+.site a.site-btn-secondary:hover {
+  background: rgba(255, 105, 180, 0.15);
+}
+
+/* ── Skip link ── */
+
+.site a.site-skip {
+  position: absolute;
+  left: var(--wv-space-2);
+  top: -100px;
+  z-index: 10;
+  padding: var(--wv-space-2) var(--wv-space-3);
+  background: var(--wv-gold);
+  border-radius: var(--wv-radius);
+  color: var(--wv-bg);
+  font-weight: bold;
+}
+
+.site a.site-skip:focus {
+  top: var(--wv-space-2);
+}
+
+/* ── Header and navigation ── */
+
+.site-header {
+  background: var(--wv-surface);
+  border-bottom: 1px solid var(--wv-border);
+}
+
+.site-header-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wv-space-1);
+  padding-top: var(--wv-space-2);
+  padding-bottom: var(--wv-space-2);
+}
+
+.site a.site-brand {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--wv-tap);
+  font-family: var(--wv-font-display);
+  font-size: var(--wv-text-xl);
+  font-weight: bold;
+  color: var(--wv-gold);
+  text-decoration: none;
+  text-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wv-space-1) var(--wv-space-2);
+  margin: 0 -10px;
+}
+
+.site a.site-nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--wv-tap);
+  padding: 0 10px;
+  border-bottom: 2px solid transparent;
+  color: var(--wv-text-muted);
+  font-size: var(--wv-text-sm);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.site a.site-nav-link:hover {
+  color: var(--wv-text);
+}
+
+.site a.site-nav-link[aria-current='page'] {
+  color: var(--wv-gold);
+  border-bottom-color: var(--wv-gold);
+}
+
+/* ── Main ── */
+
+.site-main {
+  flex: 1;
+}
+
+/* Focused by script after navigation; no ring for a non-interactive target. */
+.site-main:focus {
+  outline: none;
+}
+
+/* Pages without sections of their own (placeholders, not-found) get the container's rhythm. */
+.site-main > h1,
+.site-main > p,
+.site-main > a {
+  display: block;
+  width: 100%;
+  max-width: var(--wv-container);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--wv-space-3);
+  padding-right: var(--wv-space-3);
+}
+
+.site-main > h1 {
+  margin-top: var(--wv-space-5);
+}
+
+.site-main > a {
+  margin-bottom: var(--wv-space-5);
+}
+
+/* ── Footer ── */
+
+.site-footer {
+  padding: var(--wv-space-4) 0;
+  background: var(--wv-surface);
+  border-top: 1px solid var(--wv-border);
+  font-size: var(--wv-text-sm);
+}
+
+.site-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wv-space-1) var(--wv-space-4);
+  margin-bottom: var(--wv-space-2);
+}
+
+.site-footer-nav a,
+.site a.site-footer-contact {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--wv-tap);
+}
+
+.site p.site-footer-copyright {
+  margin: var(--wv-space-2) 0 0;
+}
+
+@media (min-width: 720px) {
+  .site-section {
+    padding: var(--wv-space-6) 0;
+  }
+
+  .site-header-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--wv-space-4);
+  }
+
+  .site-nav {
+    justify-content: flex-end;
+    margin: 0;
+  }
+}

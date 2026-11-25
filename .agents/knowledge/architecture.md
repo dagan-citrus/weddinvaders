@@ -11,18 +11,26 @@ src/
 ├── main.jsx          # React root mount
 ├── App.jsx           # Router shell: matches the URL path to a route and renders its page
 ├── routes.js         # Route table (derived from SITE_PAGE_SLUGS) + pure matchRoute(), getDocumentTitle()
-├── navigation.js     # History API glue: usePathname(), navigate()
+├── navigation.js     # History API glue: usePathname(), navigate() (scrolls to top unless the target has a #hash)
 ├── Link.jsx          # <a> that navigates in-app without a document reload
 ├── pages/            # One component per page
-│   ├── SiteLayout.jsx      # Frame of every main-site page: <nav aria-label="Site"> + <main data-route>
-│   ├── HomePage.jsx        # `/` (placeholder until the landing page is built)
+│   ├── SiteLayout.jsx      # Shell of every main-site page: skip link, header + <nav aria-label="Site">, <main id="main" data-route>, footer
+│   ├── HomePage.jsx        # `/` landing page: hero, pitch, steps, call to action (+ HomePage.css)
+│   ├── GameplayPreview.jsx # CSS-only illustration of the game screen for the hero — not the game, no canvas
 │   ├── PlaceholderPage.jsx # Site pages not built yet: heading + "Coming soon."
 │   ├── NotFoundPage.jsx    # "Event not found" + link to the main site
 │   ├── DemoPage.jsx        # `/demo`: <Game event={defaultEvent} />, no layout
 │   └── EventPage.jsx       # `/<slug>`: <Game event={event} />, no layout
 ├── Game.jsx          # React shell for one event: canvas element, keyboard/touch controls, game loop lifecycle
-├── Game.css          # Layout styles (wrapper, mobile controls, key legend)
-├── index.css         # Global reset
+├── Game.css          # Game layout styles (wrapper, mobile controls, key legend) + the game's page-level reset
+├── index.css         # Page-level rules, scoped to the game surface (see "CSS layers")
+├── content/          # All site copy, as frozen plain data — no JSX (see "Site content")
+│   ├── index.js          # Re-exports the active locale (`./en`)
+│   ├── format.js         # fillTemplate('{token}' text, values), deepFreeze()
+│   └── en/               # One module per page: common.js (shell), home.js, …
+├── styles/
+│   ├── tokens.css        # --wv-* design tokens (colours, type scale, spacing)
+│   └── site.css          # Site shell + shared primitives (.site-container, .site-section, .site-card, .site-btn*)
 ├── constants.js      # Engine constants (dimensions, physics, timing) + AMMO_META — no per-event data
 ├── levels.js         # Two pure helpers: getSpawnPool(level, items), isLevelComplete()
 ├── useGameState.js   # Core game logic: pure getInitialState/stepGame/advanceLevel + the useGameState(event) hook
@@ -77,6 +85,35 @@ Design: `docs/designs/T4.md`. Hand-rolled, no router dependency.
   404) for any unknown path, and the SPA then routes it. `vite preview` and the dev server answer
   unknown paths with `index.html` and 200 instead, so local runs cannot prove the Pages behaviour —
   see the post-deploy check in [`testing.md`](testing.md).
+
+## Site content
+Design: `docs/designs/T5.md`. Site pages take every visible string from `src/content` (import from
+`'../content'`, never from a locale folder), so copy can be edited or translated without touching
+components.
+- One module per page at `src/content/en/<routeId>.js`, exporting one `deepFreeze`d object named
+  after the page, added to `en/index.js`. `common.js` holds the shell's copy (nav labels, footer).
+- Values are plain strings, or arrays of objects with a stable `id`. No JSX, no HTML, and no
+  hostnames, emails or paths inside strings — use `{token}` placeholders that the component fills
+  with `fillTemplate` from `SITE_CONFIG`/`ROUTE_ID`.
+
+## CSS layers
+Vite emits one stylesheet, so every rule is global. Two things keep the game and the site apart:
+- **Surface attribute.** `App.jsx` sets `html[data-surface]` to `game` on `/demo` and `/<slug>` and
+  to `site` everywhere else (in a layout effect, before paint). The page-level rules of `Game.css`
+  and `index.css` (`*`, `body`, `:root`, `button`) are prefixed with a zero-specificity
+  `:where([data-surface='game'])`: same declarations, order and specificity as before, but inert on
+  site pages. Never add an unscoped element selector to those two files. Wrapping an embedded game
+  in `<div data-surface="game">` re-applies the reset and button base inside site chrome.
+- **Site CSS is scoped by class.** Tokens are `--wv-*` custom properties in `styles/tokens.css`.
+  Every site selector starts with `.site` (shell and primitives, `styles/site.css`), with
+  `html[data-surface='site']`, or with a page prefix (`.home-…` in `pages/HomePage.css`), so no
+  site rule can reach the game. `.site a` sets link colours, so link-like components raise
+  specificity with `.site a.<class>`.
+- One breakpoint, `min-width: 720px`; styles are mobile-first. The nine nav links wrap — there is
+  no hamburger menu.
+
+`SiteLayout` moves keyboard focus to `<main>` after in-app navigation between site pages (not on
+first load).
 
 ## Data Flow
 ```

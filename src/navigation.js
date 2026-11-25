@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from 'react';
 
 const LOCATION_CHANGE_EVENT = 'popstate';
+const HASH_MARK = '#';
 
 function subscribe(onChange) {
   window.addEventListener(LOCATION_CHANGE_EVENT, onChange);
@@ -24,7 +25,8 @@ export function usePathname() {
 }
 
 /**
- * Goes to a same-origin path without reloading the document.
+ * Goes to a same-origin path without reloading the document, and scrolls to
+ * the top unless the target carries a `#hash`.
  *
  * @param {string} to  Path, optionally with `?query#hash`.
  * @param {{ replace?: boolean }} [options]  `replace` swaps the current history entry instead of adding one.
@@ -34,4 +36,5 @@ export function navigate(to, { replace = false } = {}) {
   else window.history.pushState(null, '', to);
   // pushState/replaceState fire no event of their own.
   window.dispatchEvent(new PopStateEvent(LOCATION_CHANGE_EVENT));
+  if (!to.includes(HASH_MARK)) window.scrollTo(0, 0);
 }

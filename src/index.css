@@ -1,4 +1,14 @@
+/* Page-level rules. Everything except the first rule belongs to the game and is
+   scoped to the game surface (html[data-surface='game'], set by App) with a
+   zero-specificity :where(), so the game's cascade is exactly what it was. */
+
+/* Dark page behind both surfaces from the first paint, before React mounts. */
 :root {
+  color-scheme: dark;
+  background-color: #050510;
+}
+
+:root:where([data-surface='game']) {
   font-family: Arial, sans-serif;
   color-scheme: dark;
   color: #fff;
@@ -7,16 +17,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
+:where(html[data-surface='game']) body {
   margin: 0;
   display: flex;
   place-items: center;
@@ -24,12 +25,7 @@ body {
   min-height: 100vh;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
+:where([data-surface='game']) button {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
@@ -40,23 +36,20 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-button:hover {
+:where([data-surface='game']) button:hover {
   border-color: #646cff;
 }
-button:focus,
-button:focus-visible {
+:where([data-surface='game']) button:focus,
+:where([data-surface='game']) button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:where([data-surface='game']) {
     color: #213547;
     background-color: #ffffff;
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
+  :where([data-surface='game']) button {
     background-color: #f9f9f9;
   }
 }
