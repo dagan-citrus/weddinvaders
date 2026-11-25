@@ -17,14 +17,22 @@ const SITE_CHROME_SELECTOR = 'header, footer, nav, main, .site';
 const DESKTOP = { width: 1280, height: 720 };
 const MOBILE = { width: 390, height: 844 };
 
-// Layout of the game measured on the production build of commit 1a2b1b4 (the
-// integration branch before the site shell), at /DemoWedding in Chromium.
+// Desktop layout of the game measured on the production build of commit 1a2b1b4
+// (the integration branch before the site shell), at /DemoWedding in Chromium.
+// At this size the canvas is capped by its max-width, so the numbers do not
+// depend on the machine's fonts.
 const BASELINE = {
   desktopCanvas: { x: 230, y: 75.484375, width: 819.984375, height: 542.015625 },
-  mobileCanvas: { x: 12.640625, y: 247.578125, width: 364.703125, height: 241.828125 },
-  mobileBrideShoot: { x: 36.15625, y: 553.40625, width: 129.3125, height: 43 },
 };
 const GEOMETRY_TOLERANCE_PX = 0.5;
+
+// On a phone the game shrinks to fit its touch controls, whose width depends on
+// the installed fonts, so absolute positions differ between machines. What the
+// page-level game rules guarantee there is font-independent: the game is
+// centred, the canvas keeps its shape and nothing leaves the viewport.
+const CANVAS_BORDER_PX = 2;
+const CANVAS_ASPECT_RATIO = 910 / 600;
+const ASPECT_RATIO_TOLERANCE = 0.01;
 
 const GAME_BODY_STYLES = {
   display: 'flex',
@@ -127,8 +135,21 @@ test.describe('Game isolation from site CSS (e2e)', () => {
     expectRectClose(await rectOf(page, CANVAS_SELECTOR), BASELINE.desktopCanvas, 'desktop canvas');
 
     await openGame(page, MOBILE);
-    expectRectClose(await rectOf(page, CANVAS_SELECTOR), BASELINE.mobileCanvas, 'mobile canvas');
-    expectRectClose(await rectOf(page, BRIDE_SHOOT_SELECTOR), BASELINE.mobileBrideShoot, 'mobile bride shoot button');
+    const canvas = await rectOf(page, CANVAS_SELECTOR);
+    const shoot = await rectOf(page, BRIDE_SHOOT_SELECTOR);
+
+    // Centred by the game's flex body: equal space on both sides.
+    expect(Math.abs(canvas.x + canvas.width / 2 - MOBILE.width / 2)).toBeLessThanOrEqual(GEOMETRY_TOLERANCE_PX);
+    // Shrunk to fit, not stretched or clipped.
+    expect(canvas.x).toBeGreaterThan(0);
+    expect(canvas.x + canvas.width).toBeLessThan(MOBILE.width);
+    const drawnRatio = (canvas.width - 2 * CANVAS_BORDER_PX) / (canvas.height - 2 * CANVAS_BORDER_PX);
+    expect(Math.abs(drawnRatio / CANVAS_ASPECT_RATIO - 1)).toBeLessThanOrEqual(ASPECT_RATIO_TOLERANCE);
+    // The touch controls sit under the canvas, inside the viewport.
+    expect(shoot.y).toBeGreaterThanOrEqual(canvas.y + canvas.height);
+    expect(shoot.x).toBeGreaterThanOrEqual(0);
+    expect(shoot.x + shoot.width).toBeLessThanOrEqual(MOBILE.width);
+    expect(shoot.y + shoot.height).toBeLessThanOrEqual(MOBILE.height);
   });
 
   test('test_e2e_game_after_site_navigation: arriving from the site gives the same game page', async ({ page }) => {
