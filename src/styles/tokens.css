@@ -1,0 +1,37 @@
+/* Design tokens of the main site. Custom properties only, so they are inert for the game. */
+:root {
+  --wv-bg: #050510;
+  --wv-surface: #0a1432;
+  --wv-surface-2: #14224d;
+  --wv-border: #2a3a6e;
+  --wv-text: #ffffff;
+  --wv-text-muted: #b8c0d8;
+  --wv-gold: #ffd700;
+  --wv-pink: #ff69b4;
+  --wv-blue: #4169e1; /* 4.2:1 on --wv-bg: borders and glows only, never text */
+  --wv-link: #8fb0ff;
+  --wv-green: #4caf50;
+  --wv-sky-edge: #1a3a70;
+  --wv-sky-mid: #22478a;
+
+  --wv-font-body: Arial, Helvetica, sans-serif;
+  --wv-font-display: ui-monospace, 'Courier New', monospace;
+
+  --wv-text-sm: 0.875rem;
+  --wv-text-base: 1rem;
+  --wv-text-lg: 1.25rem;
+  --wv-text-xl: 1.5rem;
+  --wv-text-2xl: clamp(1.75rem, 5vw, 2.25rem);
+  --wv-text-hero: clamp(2rem, 9vw, 4rem);
+
+  --wv-space-1: 4px;
+  --wv-space-2: 8px;
+  --wv-space-3: 16px;
+  --wv-space-4: 24px;
+  --wv-space-5: 40px;
+  --wv-space-6: 64px;
+
+  --wv-radius: 8px;
+  --wv-container: 1080px;
+  --wv-tap: 40px;
+}
