@@ -22,3 +22,6 @@ const contextStub = new Proxy({}, {
 });
 
 HTMLCanvasElement.prototype.getContext = () => contextStub;
+
+// jsdom does not implement scrolling; navigate() scrolls to the top after a page change.
+window.scrollTo = () => {};
