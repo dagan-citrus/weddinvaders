@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import { usePathname, navigate } from './navigation';
 
@@ -22,6 +22,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   window.history.replaceState(null, '', HOME_PATH);
 });
 
@@ -82,5 +83,35 @@ describe('navigation', () => {
 
     expect(() => navigate(HOME_PATH)).not.toThrow();
     expect(window.location.pathname).toBe(HOME_PATH);
+  });
+
+  it('test_navigate_scrolls_top', () => {
+    renderAt('/pricing');
+    const scrollTo = vi.spyOn(window, 'scrollTo');
+
+    act(() => navigate('/order'));
+
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
+  it('test_navigate_replace_scrolls_top', () => {
+    renderAt('/pricing');
+    const scrollTo = vi.spyOn(window, 'scrollTo');
+
+    act(() => navigate('/terms', { replace: true }));
+
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
+  it('test_navigate_hash_does_not_scroll', () => {
+    renderAt(HOME_PATH);
+    const scrollTo = vi.spyOn(window, 'scrollTo');
+
+    act(() => navigate('/pricing#faq'));
+
+    expect(window.location.hash).toBe('#faq');
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 });
