@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { usePathname } from './navigation';
 import { ROUTE_ID, getDocumentTitle, matchRoute } from './routes';
 import SiteLayout from './pages/SiteLayout';
@@ -13,6 +13,10 @@ const PAGE_COMPONENTS = {
   [ROUTE_ID.HOME]: HomePage,
 };
 
+// Which page-level CSS applies: the game's own (index.css, Game.css) or the site's.
+const SURFACE = Object.freeze({ GAME: 'game', SITE: 'site' });
+const GAME_ROUTE_IDS = [ROUTE_ID.EVENT, ROUTE_ID.DEMO];
+
 export default function App() {
   const match = matchRoute(usePathname());
   const { route, event } = match;
@@ -21,6 +25,12 @@ export default function App() {
   useEffect(() => {
     document.title = title;
   }, [title]);
+
+  const surface = GAME_ROUTE_IDS.includes(route.id) ? SURFACE.GAME : SURFACE.SITE;
+  // Before paint, so a page never shows with the other surface's styles.
+  useLayoutEffect(() => {
+    document.documentElement.dataset.surface = surface;
+  }, [surface]);
 
   // Game pages render the game alone, without the site layout.
   if (route.id === ROUTE_ID.EVENT) return <EventPage event={event} />;
