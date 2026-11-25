@@ -31,7 +31,6 @@ const NAV_LINKS = [
 /** The seven site pages that are still placeholders: slug and title. */
 const PLACEHOLDER_PAGES = [
   ['customize', 'Customize'],
-  ['pricing', 'Pricing'],
   ['how-it-works', 'How it works'],
   ['order', 'Order'],
   ['showcase', 'Showcase'],
