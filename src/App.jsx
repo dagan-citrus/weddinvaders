@@ -5,6 +5,7 @@ import SiteLayout from './pages/SiteLayout';
 import HomePage from './pages/HomePage';
 import CustomizePage from './pages/CustomizePage';
 import PricingPage from './pages/PricingPage';
+import OrderPage from './pages/OrderPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import NotFoundPage from './pages/NotFoundPage';
 import DemoPage from './pages/DemoPage';
@@ -16,6 +17,7 @@ const PAGE_COMPONENTS = {
   [ROUTE_ID.CUSTOMIZE]: CustomizePage,
   [ROUTE_ID.PRICING]: PricingPage,
   [ROUTE_ID.DEMO]: DemoPage,
+  [ROUTE_ID.ORDER]: OrderPage,
 };
 
 // Which page-level CSS applies: the game's own (index.css, Game.css) or the site's.
