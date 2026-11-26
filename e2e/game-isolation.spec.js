@@ -6,12 +6,15 @@ import { test, expect } from '@playwright/test';
 
 /** Where the default event's game is served. */
 const GAME_PATH = '/DemoWedding';
+/** A second registered event: every event page is a game surface, not only the default one. */
+const SAMPLE_EVENT_PATH = '/MayaAndNoah';
+/** The demo is a site page that embeds the game and links to the event's own page. */
 const DEMO_PATH = '/demo';
+const DEMO_HEADING = 'Play the demo';
+const OWN_PAGE_LINK = 'Open this sample on its own page';
 
-const SITE_NAME = "Weddin'Vaders";
 const CANVAS_SELECTOR = 'canvas.game-canvas';
 const BRIDE_SHOOT_SELECTOR = '.shoot-btn.bride-shoot';
-const HERO_SELECTOR = 'section[data-section="hero"]';
 const SITE_CHROME_SELECTOR = 'header, footer, nav, main, .site';
 
 const DESKTOP = { width: 1280, height: 720 };
@@ -88,7 +91,7 @@ test.afterEach(() => {
 });
 
 test.describe('Game isolation from site CSS (e2e)', () => {
-  for (const path of [GAME_PATH, DEMO_PATH]) {
+  for (const path of [GAME_PATH, SAMPLE_EVENT_PATH]) {
     test(`test_e2e_game_surface: ${path} is a game surface without site chrome`, async ({ page }) => {
       await openGame(page, DESKTOP, path);
 
@@ -154,20 +157,23 @@ test.describe('Game isolation from site CSS (e2e)', () => {
 
   test('test_e2e_game_after_site_navigation: arriving from the site gives the same game page', async ({ page }) => {
     await page.setViewportSize(DESKTOP);
-    await page.goto('/');
-    await expect(mainHeading(page)).toHaveText(SITE_NAME);
+    await page.goto(DEMO_PATH);
+    await expect(mainHeading(page)).toHaveText(DEMO_HEADING);
     await expect(page.locator('html')).toHaveAttribute('data-surface', 'site');
+    expect(await computedStyles(page, 'body', ['display'])).toEqual({ display: 'block' });
 
-    await page.locator(HERO_SELECTOR).getByRole('link', { name: 'Try the demo', exact: true }).click();
+    await page.getByRole('link', { name: OWN_PAGE_LINK, exact: true }).click();
 
+    await expect(page).toHaveURL(new RegExp(`${GAME_PATH}$`));
     await expect(gameCanvas(page)).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('data-surface', 'game');
+    await expect(page.locator(SITE_CHROME_SELECTOR)).toHaveCount(0);
     expect(await computedStyles(page, 'body', ['display'])).toEqual({ display: 'flex' });
     expectRectClose(await rectOf(page, CANVAS_SELECTOR), BASELINE.desktopCanvas, 'desktop canvas after navigation');
 
     await page.goBack();
 
-    await expect(mainHeading(page)).toHaveText(SITE_NAME);
+    await expect(mainHeading(page)).toHaveText(DEMO_HEADING);
     await expect(page.locator('html')).toHaveAttribute('data-surface', 'site');
     expect(await computedStyles(page, 'body', ['display'])).toEqual({ display: 'block' });
   });

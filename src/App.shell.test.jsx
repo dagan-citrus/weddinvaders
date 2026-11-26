@@ -8,6 +8,8 @@ import { navigate } from './navigation';
 
 const HOME_PATH = '/';
 const EVENT_PATH = '/DemoWedding';
+const SAMPLE_EVENT_PATH = '/MayaAndNoah';
+const DEMO_PATH = '/demo';
 const SITE_NAME = "Weddin'Vaders";
 const SITE_NAV_NAME = 'Site';
 const FOOTER_NAV_NAME = 'Footer';
@@ -36,14 +38,14 @@ afterEach(() => {
 });
 
 describe('App shell and surface (component)', () => {
-  it.each([HOME_PATH, '/pricing', '/NoSuchEvent'])('test_surface_site: %s', (path) => {
+  it.each([HOME_PATH, '/pricing', '/NoSuchEvent', DEMO_PATH])('test_surface_site: %s', (path) => {
     renderAt(path);
 
     expect(surface()).toBe(SITE_SURFACE);
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
 
-  it.each(['/demo', EVENT_PATH])('test_surface_game: %s', (path) => {
+  it.each([SAMPLE_EVENT_PATH, EVENT_PATH])('test_surface_game: %s', (path) => {
     renderAt(path);
 
     expect(surface()).toBe(GAME_SURFACE);

@@ -13,11 +13,11 @@ const sourcePath = (name) => join(SRC_DIR, name);
 const readCss = (name) => readFileSync(sourcePath(name), 'utf8');
 
 const GAME_CSS_FILES = ['Game.css', 'index.css'];
-const SITE_CSS_FILES = ['styles/site.css', 'pages/HomePage.css'];
+const SITE_CSS_FILES = ['styles/site.css', 'pages/HomePage.css', 'pages/DemoPage.css'];
 
 /** A selector that starts with a bare page-level element (or the universal selector). */
 const UNSCOPED_PAGE_SELECTOR = /^(\*|body|button|a|h1)(?![\w-])/;
-const SITE_SELECTOR_PREFIXES = ['.site', '.home-', "html[data-surface='site']"];
+const SITE_SELECTOR_PREFIXES = ['.site', '.home-', '.demo-', "html[data-surface='site']"];
 
 /** The customize page's own stylesheet: every rule must target one of its `.customize-` classes. */
 const CUSTOMIZE_CSS_FILE = 'pages/CustomizePage.css';

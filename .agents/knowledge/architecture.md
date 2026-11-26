@@ -11,7 +11,7 @@ src/
 ├── main.jsx          # React root mount
 ├── App.jsx           # Router shell: matches the URL path to a route and renders its page
 ├── routes.js         # Route table (derived from SITE_PAGE_SLUGS) + pure matchRoute(), getDocumentTitle()
-├── navigation.js     # History API glue: usePathname(), navigate() (scrolls to top unless the target has a #hash)
+├── navigation.js     # History API glue: usePathname(), useLocationSearch(), navigate() (scrolls to top unless the target has a #hash or `scroll: false`)
 ├── Link.jsx          # <a> that navigates in-app without a document reload
 ├── pages/            # One component per page
 │   ├── SiteLayout.jsx      # Shell of every main-site page: skip link, header + <nav aria-label="Site">, <main id="main" data-route>, footer
@@ -22,7 +22,8 @@ src/
 │   ├── orderLink.js        # getOrderPath(packageId), PACKAGE_QUERY_PARAM — the pricing → order link contract
 │   ├── PlaceholderPage.jsx # Site pages not built yet: heading + "Coming soon."
 │   ├── NotFoundPage.jsx    # "Event not found" + link to the main site
-│   ├── DemoPage.jsx        # `/demo`: <Game event={defaultEvent} />, no layout
+│   ├── DemoPage.jsx        # `/demo`: the game embedded in the site, with a switcher between sample events (+ DemoPage.css)
+│   ├── demoSamples.js      # The demo's samples (classic = defaultEvent, garden = mayaAndNoahEvent) and the `?event=` query that selects one
 │   └── EventPage.jsx       # `/<slug>`: <Game event={event} />, no layout
 ├── Game.jsx          # React shell for one event: canvas element, keyboard/touch controls, game loop lifecycle
 ├── Game.css          # Game layout styles (wrapper, mobile controls, key legend) + the game's page-level reset
@@ -47,7 +48,8 @@ src/
 │   ├── slug.js           # normalizeSlug(), isValidSlug(), RESERVED_SLUGS, SITE_PAGE_SLUGS
 │   ├── registry.js       # createEventRegistry() — lookup by slug, slug availability, public listing
 │   ├── eventUrl.js       # getEventPath(), buildEventUrl()
-│   └── defaultEvent.js   # The default/demo event (slug DemoWedding): its items, levels, messages and images
+│   ├── defaultEvent.js   # The default/demo event (slug DemoWedding): its items, levels, messages and images
+│   └── mayaAndNoahEvent.js # Sample event for the demo page (slug MayaAndNoah, `public: false`); reuses the default images
 └── assets/
     ├── bride-nobg.png
     ├── groom-nobg.png
@@ -69,7 +71,7 @@ Design: `docs/designs/T4.md`. Hand-rolled, no router dependency.
 | Path | Renders |
 |------|---------|
 | `/` | `HomePage` inside `SiteLayout` — the main site, never the game |
-| `/<site page>` (the eight `SITE_PAGE_SLUGS`) | That page inside `SiteLayout` (`PlaceholderPage` until built); `/demo` is the exception: the game alone |
+| `/<site page>` (the eight `SITE_PAGE_SLUGS`) | That page inside `SiteLayout` (`PlaceholderPage` until built) |
 | `/<slug>` of a registered event | `EventPage` — the game alone, no site layout |
 | anything else (unknown slug, more than one segment, undecodable) | `NotFoundPage` inside `SiteLayout` |
 
@@ -113,8 +115,8 @@ Design: `docs/designs/T8.md`. The one content module that also holds numbers and
 
 ## CSS layers
 Vite emits one stylesheet, so every rule is global. Two things keep the game and the site apart:
-- **Surface attribute.** `App.jsx` sets `html[data-surface]` to `game` on `/demo` and `/<slug>` and
-  to `site` everywhere else (in a layout effect, before paint). The page-level rules of `Game.css`
+- **Surface attribute.** `App.jsx` sets `html[data-surface]` to `game` on `/<slug>` and
+  to `site` everywhere else, `/demo` included (in a layout effect, before paint). The page-level rules of `Game.css`
   and `index.css` (`*`, `body`, `:root`, `button`) are prefixed with a zero-specificity
   `:where([data-surface='game'])`: same declarations, order and specificity as before, but inert on
   site pages. Never add an unscoped element selector to those two files. Wrapping an embedded game
@@ -122,7 +124,7 @@ Vite emits one stylesheet, so every rule is global. Two things keep the game and
 - **Site CSS is scoped by class.** Tokens are `--wv-*` custom properties in `styles/tokens.css`.
   Every site selector starts with `.site` (shell and primitives, `styles/site.css`), with
   `html[data-surface='site']`, or with a page prefix (`.home-…` in `pages/HomePage.css`,
-  `.pricing-…` in `pages/PricingPage.css`), so no
+  `.pricing-…` in `pages/PricingPage.css`, `.demo-…` in `pages/DemoPage.css`), so no
   site rule can reach the game. `.site a` sets link colours, so link-like components raise
   specificity with `.site a.<class>`.
 - One breakpoint, `min-width: 720px`; styles are mobile-first. The nine nav links wrap — there is
@@ -155,8 +157,23 @@ timing, `AMMO_META`) — see [`knowledge/constants.md`](constants.md) — and al
 - **`renderer.js` is pure** — takes `(ctx, state, assets)`, returns nothing, has no side-effects.
 - **Canvas dimensions**: `CANVAS_WIDTH = 910` (800 play area + 110 panel), `GAME_HEIGHT = 600` (540 play + 60 HUD).
 
+## Demo page (design: `docs/designs/T6.md`)
+`/demo` is a site page that embeds the real game. Rules for embedding the game in site chrome:
+- **Wrapper.** `<div class="demo-stage" data-surface="game">` re-applies the game's reset and button
+  base. `DemoPage.css` (`.demo-stage …`) undoes what the game assumes about owning the page
+  (`.game-wrapper` min-height and padding, canvas capped to the viewport height) and lets the touch
+  controls wrap on phones. The game modules and `Game.css` are not changed for the embed.
+- **Samples in the URL.** `/demo` shows the classic sample, `/demo?event=garden` the other;
+  `demoSamples.js` maps the query to a sample. The switcher links call
+  `navigate(path, { replace: true, scroll: false })`; `<Game>` remounts because the event slug changes.
+- **Key guard.** The game listens on `window` and starts on any keydown, so `DemoPage` adds a
+  capture-phase `keydown` listener on `document` that stops Tab and bare modifier keys from reaching
+  it. Space and the arrow keys never scroll the page (the game prevents their default).
+- **Adding a sample:** an event module in `src/events/`, appended to `ALL_EVENTS`; an entry in
+  `DEMO_SAMPLES`; its label and summary in `content/en/demo.js` (`switcher.samples`, same id).
+
 ## Entry Point
-`src/main.jsx` → `<App />` → the page for the current path. On game pages (`/demo`, `/<slug>`) the
+`src/main.jsx` → `<App />` → the page for the current path. On event pages (`/<slug>`) the
 canvas is the only meaningful DOM node.
 
 ## Component Files

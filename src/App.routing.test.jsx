@@ -96,9 +96,12 @@ describe('App routing (component)', () => {
   it('test_demo', () => {
     renderAt('/demo');
 
+    // The demo is a site page with the game embedded in it.
     expect(gameCanvas()).toBeInTheDocument();
-    expect(mainElement()).toBeNull();
-    expect(screen.queryByRole('navigation')).toBeNull();
+    expect(mainElement()).toHaveAttribute('data-route', 'demo');
+    expect(mainElement()).toContainElement(gameCanvas());
+    expect(siteNav()).toBeInTheDocument();
+    expect(navLink('Demo')).toHaveAttribute('aria-current', CURRENT_PAGE);
   });
 
   it.each([EVENT_PATH, '/demowedding', '/DemoWedding/'])('test_event: %s', (path) => {

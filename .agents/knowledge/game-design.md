@@ -82,3 +82,11 @@ new `hourglass` is `2` (rare, same tier as family).
 - `exclusiveTo: 'bride'` items can only be shot by bride; `'groom'` items only by groom.
 - Rows advance on `rowAdvanceTimer`; press **N** (when level complete) to fast-forward.
 - `priceScale` multiplies each item's base `price` — e.g., rings at 0.1× cost $50 instead of $500.
+
+## Sample event: Maya & Noah (`src/events/mayaAndNoahEvent.js`)
+A second, fictional event that exists to show customization on `/demo` (and at `/MayaAndNoah`). It
+has its own names, messages, 12 items and 3 levels (The Backyard, Sound Check, Golden Hour) and
+reuses the default event's images. It follows the same rules as the default data: one guest-type
+income item (invites), two family-type ones (hearts), one discount item (30%, 🎀 — the renderer's
+discount text is fixed), one trap (`incomeType: 'mine'`, here "Rain") and one slow-time item.
+Level 1 needs only the garden, which costs one cash shot.
