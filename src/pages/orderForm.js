@@ -57,6 +57,9 @@ const LINE_BREAK = /\r?\n/g;
 const MAILTO_LINE_BREAK = '\r\n'; // RFC 6068
 
 const trimmed = (value) => String(value ?? '').trim();
+// One-line fields end up in the subject and in "Label: value" lines, so a line
+// break inside one could forge an extra line (or a mail header in a lax client).
+const singleLine = (value) => trimmed(value).replace(/\s*[\r\n]+\s*/g, ' ');
 
 /**
  * Whether orders can be sent: only once a real contact address is configured.
@@ -203,26 +206,26 @@ export function validateOrder(order, options) {
 export function buildOrderMessage(order, context) {
   const { template, siteName, eventUrl, packageName, addonNames, omitNotes = false } = context;
   const line = (text, value) => fillTemplate(text, { value });
-  const bride = trimmed(order.brideName);
-  const groom = trimmed(order.groomName);
+  const bride = singleLine(order.brideName);
+  const groom = singleLine(order.groomName);
   const notes = trimmed(order.notes).replace(LINE_BREAK, '\n');
 
   let notesText = notes === '' ? template.none : notes;
   if (omitNotes) notesText = template.notesOmitted;
 
   const subject = fillTemplate(template.subject, {
-    site: siteName, groom, bride, slug: trimmed(order.slug),
+    site: siteName, groom, bride, slug: singleLine(order.slug),
   });
   const body = [
     fillTemplate(template.intro, { site: siteName }),
     '',
     line(template.bride, bride),
     line(template.groom, groom),
-    line(template.date, trimmed(order.weddingDate)),
+    line(template.date, singleLine(order.weddingDate)),
     line(template.address, eventUrl),
     line(template.package, packageName),
     line(template.addons, addonNames.length > 0 ? addonNames.join(', ') : template.none),
-    line(template.email, trimmed(order.email)),
+    line(template.email, singleLine(order.email)),
     '',
     template.notesHeading,
     notesText,

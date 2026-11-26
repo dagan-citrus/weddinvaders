@@ -259,6 +259,39 @@ describe('order form: message and mailto', () => {
     expect(mailtoUrl).not.toMatch(/[\r\n ]/);
   });
 
+  it('test_mailto_no_header_injection: form values cannot add recipients or headers (R7, R15)', () => {
+    const hostile = makeOrder({
+      brideName: 'Shelly&bcc=evil@example.net',
+      groomName: 'Dan?subject=Hi&cc=evil@example.net',
+      email: 'dan@example.org&to=evil@example.net',
+      notes: 'x&bcc=evil@example.net\r\nBcc: evil@example.net\n?body=y#frag',
+    });
+    const { mailtoUrl } = composeOrder(hostile, CTX, ORDER_TO);
+
+    // One recipient, one "?", exactly the two headers we set, nothing raw.
+    expect(mailtoUrl.startsWith(`mailto:${ORDER_TO}?subject=`)).toBe(true);
+    expect(mailtoUrl.split('?')).toHaveLength(2);
+    expect(mailtoUrl.split('&')).toHaveLength(2);
+    expect(mailtoUrl).not.toMatch(/[\r\n #]/);
+    const params = new URLSearchParams(mailtoUrl.slice(mailtoUrl.indexOf('?') + 1));
+    expect([...params.keys()]).toEqual(['subject', 'body']);
+    expect(params.get('body')).toContain('Bride: Shelly&bcc=evil@example.net');
+  });
+
+  it('test_message_single_line_fields: a line break in a one-line field cannot forge a line (R7)', () => {
+    const { subject, body } = buildOrderMessage(
+      makeOrder({ brideName: 'Shelly\r\nBcc: evil@example.net', email: 'dan@example.org\nPackage: Premium' }),
+      CTX,
+    );
+
+    expect(subject).not.toMatch(/[\r\n]/);
+    expect(subject).toBe("Weddin'Vaders order: Dan & Shelly Bcc: evil@example.net (DanAndShelly)");
+    const lines = body.split('\n');
+    expect(lines).toContain('Bride: Shelly Bcc: evil@example.net');
+    expect(lines).toContain('Reply to: dan@example.org Package: Premium');
+    expect(lines.filter((text) => text.startsWith('Package: '))).toEqual(['Package: Custom']);
+  });
+
   it('test_mailto_crlf_input', () => {
     const withLf = buildMailtoUrl({ to: ORDER_TO, subject: 's', body: 'a\nb' });
     const withCrLf = buildMailtoUrl({ to: ORDER_TO, subject: 's', body: 'a\r\nb' });
