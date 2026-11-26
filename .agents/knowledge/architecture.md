@@ -17,6 +17,7 @@ src/
 │   ├── SiteLayout.jsx      # Shell of every main-site page: skip link, header + <nav aria-label="Site">, <main id="main" data-route>, footer
 │   ├── HomePage.jsx        # `/` landing page: hero, pitch, steps, call to action (+ HomePage.css)
 │   ├── GameplayPreview.jsx # CSS-only illustration of the game screen for the hero — not the game, no canvas
+│   ├── CustomizePage.jsx   # `/customize`: what can be changed, as before/after examples (+ CustomizePage.css)
 │   ├── PricingPage.jsx     # `/pricing`: packages, add-ons, terms, rendered from content/en/pricing.js (+ PricingPage.css)
 │   ├── orderLink.js        # getOrderPath(packageId), PACKAGE_QUERY_PARAM — the pricing → order link contract
 │   ├── PlaceholderPage.jsx # Site pages not built yet: heading + "Coming soon."
@@ -30,7 +31,7 @@ src/
 ├── content/          # All site copy, as frozen plain data — no JSX (see "Site content")
 │   ├── index.js          # Re-exports the active locale (`./en`)
 │   ├── format.js         # fillTemplate('{token}' text, values), deepFreeze(), formatPrice(amount, currency)
-│   └── en/               # One module per page: common.js (shell), home.js, …
+│   └── en/               # One module per page: common.js (shell), home.js, customize.js, pricing.js, …
 ├── styles/
 │   ├── tokens.css        # --wv-* design tokens (colours, type scale, spacing)
 │   └── site.css          # Site shell + shared primitives (.site-container, .site-section, .site-card, .site-btn*)
@@ -182,3 +183,13 @@ canvas is the only meaningful DOM node.
 | [`knowledge/renderer.md`](renderer.md) | `render()` and draw functions in `src/renderer.js` — all canvas drawing |
 | [`knowledge/game-jsx.md`](game-jsx.md) | `Game` component in `src/Game.jsx` — React shell wiring hooks + canvas + controls |
 | [`knowledge/constants.md`](constants.md) | `src/constants.js` — shared engine dimensions, timing, `AMMO_META` |
+
+## Customization page (`/customize`)
+`pages/CustomizePage.jsx` shows five options (`names`, `photos`, `messages`, `items`, `levels`),
+each as before/after rows, then a "What stays the same" list (theme, sound, language, controls —
+not configurable today, so never listed as options).
+- **Before values are read from `defaultEvent` in the component; after values live in
+  `content/en/customize.js`.** Never retype a default value into the content module: the "before"
+  side must not drift from the game.
+- Example ids in the content (`items.examples[].id`, `levels.example.levelId` / `required`) must
+  exist in `defaultEvent`; an example whose default item or level is missing is skipped.
