@@ -30,3 +30,21 @@ export function deepFreeze(value) {
   }
   return value;
 }
+
+/**
+ * Formats a price for display: whole amounts without decimals, others with two.
+ *
+ * @param {number} amount
+ * @param {string} currency  ISO 4217 code, e.g. `'USD'`.
+ * @param {string} [locale]
+ * @returns {string} e.g. `'$149'`, `'$149.50'`, `'₪149'`.
+ */
+export function formatPrice(amount, currency, locale = 'en-US') {
+  const fractionDigits = Number.isInteger(amount) ? 0 : 2;
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(amount);
+}

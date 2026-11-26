@@ -17,6 +17,8 @@ src/
 │   ├── SiteLayout.jsx      # Shell of every main-site page: skip link, header + <nav aria-label="Site">, <main id="main" data-route>, footer
 │   ├── HomePage.jsx        # `/` landing page: hero, pitch, steps, call to action (+ HomePage.css)
 │   ├── GameplayPreview.jsx # CSS-only illustration of the game screen for the hero — not the game, no canvas
+│   ├── PricingPage.jsx     # `/pricing`: packages, add-ons, terms, rendered from content/en/pricing.js (+ PricingPage.css)
+│   ├── orderLink.js        # getOrderPath(packageId), PACKAGE_QUERY_PARAM — the pricing → order link contract
 │   ├── PlaceholderPage.jsx # Site pages not built yet: heading + "Coming soon."
 │   ├── NotFoundPage.jsx    # "Event not found" + link to the main site
 │   ├── DemoPage.jsx        # `/demo`: <Game event={defaultEvent} />, no layout
@@ -26,7 +28,7 @@ src/
 ├── index.css         # Page-level rules, scoped to the game surface (see "CSS layers")
 ├── content/          # All site copy, as frozen plain data — no JSX (see "Site content")
 │   ├── index.js          # Re-exports the active locale (`./en`)
-│   ├── format.js         # fillTemplate('{token}' text, values), deepFreeze()
+│   ├── format.js         # fillTemplate('{token}' text, values), deepFreeze(), formatPrice(amount, currency)
 │   └── en/               # One module per page: common.js (shell), home.js, …
 ├── styles/
 │   ├── tokens.css        # --wv-* design tokens (colours, type scale, spacing)
@@ -96,6 +98,18 @@ components.
   hostnames, emails or paths inside strings — use `{token}` placeholders that the component fills
   with `fillTemplate` from `SITE_CONFIG`/`ROUTE_ID`.
 
+### Pricing (`content/en/pricing.js`)
+Design: `docs/designs/T8.md`. The one content module that also holds numbers and a boolean.
+- **Changing prices:** edit the `price` numbers (and `termValues` for delivery/hosting) and, if
+  needed, `currency` (ISO 4217, named only there). Prices are bare numbers; `PricingPage` displays
+  every one through `formatPrice`, so no string contains an amount or a currency symbol.
+- **`pricesArePlaceholder`** is `true` while the numbers are examples: the page shows the "Example
+  pricing" notice, an "Example price" tag on every price and an "Example terms" tag. Once the real
+  numbers are in, set it to `false`; nothing else changes.
+- **Tier ids (`basic`, `custom`, `premium`) are a contract with the order form.** Each tier links
+  to `getOrderPath(id)` (`pages/orderLink.js`), i.e. `/order?package=<id>`; the order page reads
+  the same `PACKAGE_QUERY_PARAM`. Renaming an id changes that URL.
+
 ## CSS layers
 Vite emits one stylesheet, so every rule is global. Two things keep the game and the site apart:
 - **Surface attribute.** `App.jsx` sets `html[data-surface]` to `game` on `/demo` and `/<slug>` and
@@ -106,7 +120,8 @@ Vite emits one stylesheet, so every rule is global. Two things keep the game and
   in `<div data-surface="game">` re-applies the reset and button base inside site chrome.
 - **Site CSS is scoped by class.** Tokens are `--wv-*` custom properties in `styles/tokens.css`.
   Every site selector starts with `.site` (shell and primitives, `styles/site.css`), with
-  `html[data-surface='site']`, or with a page prefix (`.home-…` in `pages/HomePage.css`), so no
+  `html[data-surface='site']`, or with a page prefix (`.home-…` in `pages/HomePage.css`,
+  `.pricing-…` in `pages/PricingPage.css`), so no
   site rule can reach the game. `.site a` sets link colours, so link-like components raise
   specificity with `.site a.<class>`.
 - One breakpoint, `min-width: 720px`; styles are mobile-first. The nine nav links wrap — there is
