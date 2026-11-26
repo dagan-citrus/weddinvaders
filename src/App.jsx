@@ -4,6 +4,7 @@ import { ROUTE_ID, getDocumentTitle, matchRoute } from './routes';
 import SiteLayout from './pages/SiteLayout';
 import HomePage from './pages/HomePage';
 import PricingPage from './pages/PricingPage';
+import OrderPage from './pages/OrderPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import NotFoundPage from './pages/NotFoundPage';
 import DemoPage from './pages/DemoPage';
@@ -13,6 +14,7 @@ import EventPage from './pages/EventPage';
 const PAGE_COMPONENTS = {
   [ROUTE_ID.HOME]: HomePage,
   [ROUTE_ID.PRICING]: PricingPage,
+  [ROUTE_ID.ORDER]: OrderPage,
 };
 
 // Which page-level CSS applies: the game's own (index.css, Game.css) or the site's.
