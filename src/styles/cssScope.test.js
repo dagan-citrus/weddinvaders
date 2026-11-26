@@ -19,6 +19,11 @@ const SITE_CSS_FILES = ['styles/site.css', 'pages/HomePage.css'];
 const UNSCOPED_PAGE_SELECTOR = /^(\*|body|button|a|h1)(?![\w-])/;
 const SITE_SELECTOR_PREFIXES = ['.site', '.home-', "html[data-surface='site']"];
 
+/** The customize page's own stylesheet: every rule must target one of its `.customize-` classes. */
+const CUSTOMIZE_CSS_FILE = 'pages/CustomizePage.css';
+const CUSTOMIZE_CLASS_PREFIX = '.customize-';
+const SITE_SCOPE_PREFIX = '.site ';
+
 const KEYFRAMES_RULE = /^@(-\w+-)?keyframes\b/;
 
 /** Double quotes become single quotes, so either attribute-quoting style matches. */
@@ -80,6 +85,18 @@ describe('CSS scoping', () => {
     const unscoped = selectors.filter(
       (selector) => !SITE_SELECTOR_PREFIXES.some((prefix) => selector.startsWith(prefix)),
     );
+    expect(unscoped).toEqual([]);
+  });
+
+  it('test_customize_css_scoped: every rule of the customize page targets its own classes', () => {
+    const selectors = styleSelectors(readCss(CUSTOMIZE_CSS_FILE));
+
+    expect(selectors.length).toBeGreaterThan(0);
+    // Starts with a page class; or with `.site ` (to outrank a `.site <element>` default) and still names one.
+    const unscoped = selectors.filter((selector) => !(
+      selector.startsWith(CUSTOMIZE_CLASS_PREFIX)
+      || (selector.startsWith(SITE_SCOPE_PREFIX) && selector.includes(CUSTOMIZE_CLASS_PREFIX))
+    ));
     expect(unscoped).toEqual([]);
   });
 

@@ -3,6 +3,7 @@ import { usePathname } from './navigation';
 import { ROUTE_ID, getDocumentTitle, matchRoute } from './routes';
 import SiteLayout from './pages/SiteLayout';
 import HomePage from './pages/HomePage';
+import CustomizePage from './pages/CustomizePage';
 import PricingPage from './pages/PricingPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -12,6 +13,7 @@ import EventPage from './pages/EventPage';
 // Page component per site route id; routes without an entry render PlaceholderPage.
 const PAGE_COMPONENTS = {
   [ROUTE_ID.HOME]: HomePage,
+  [ROUTE_ID.CUSTOMIZE]: CustomizePage,
   [ROUTE_ID.PRICING]: PricingPage,
 };
 
