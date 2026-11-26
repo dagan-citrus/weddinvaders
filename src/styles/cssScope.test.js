@@ -94,6 +94,17 @@ describe('CSS scoping', () => {
     expect(foreign).toEqual([]);
   });
 
+  it('test_order_css_scoped: every rule of pages/OrderPage.css belongs to the order page', () => {
+    const selectors = styleSelectors(readCss('pages/OrderPage.css'));
+
+    expect(selectors.length).toBeGreaterThan(0);
+    // A rule may be raised under `.site` to outrank the shell's element defaults.
+    const foreign = selectors.filter(
+      (selector) => !(selector.startsWith('.order-') || (selector.startsWith('.site') && selector.includes('.order-'))),
+    );
+    expect(foreign).toEqual([]);
+  });
+
   it.each([
     ['--wv-bg', '#050510'],
     ['--wv-gold', '#ffd700'],

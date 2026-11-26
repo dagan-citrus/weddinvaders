@@ -32,7 +32,6 @@ const NAV_LINKS = [
 const PLACEHOLDER_PAGES = [
   ['customize', 'Customize'],
   ['how-it-works', 'How it works'],
-  ['order', 'Order'],
   ['showcase', 'Showcase'],
   ['privacy', 'Privacy'],
   ['terms', 'Terms'],
