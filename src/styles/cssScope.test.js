@@ -100,6 +100,17 @@ describe('CSS scoping', () => {
     expect(unscoped).toEqual([]);
   });
 
+  it('test_pricing_css_scoped: every rule of pages/PricingPage.css belongs to the pricing page', () => {
+    const selectors = styleSelectors(readCss('pages/PricingPage.css'));
+
+    expect(selectors.length).toBeGreaterThan(0);
+    // A rule may be raised under `.site` to outrank the shell's element defaults.
+    const foreign = selectors.filter(
+      (selector) => !(selector.startsWith('.pricing-') || (selector.startsWith('.site') && selector.includes('.pricing-'))),
+    );
+    expect(foreign).toEqual([]);
+  });
+
   it.each([
     ['--wv-bg', '#050510'],
     ['--wv-gold', '#ffd700'],

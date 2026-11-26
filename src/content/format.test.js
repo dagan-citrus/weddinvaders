@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fillTemplate, deepFreeze } from './format.js';
+import { fillTemplate, deepFreeze, formatPrice } from './format.js';
 
 describe('content format helpers', () => {
   it('test_fill_replaces', () => {
@@ -26,5 +26,14 @@ describe('content format helpers', () => {
     expect(Object.isFrozen(value.list[0].deep)).toBe(true);
     expect(Object.isFrozen(value.nested)).toBe(true);
     expect(Object.isFrozen(value.nested.items)).toBe(true);
+  });
+
+  it.each([
+    [149, 'USD', '$149'],
+    [149.5, 'USD', '$149.50'],
+    [1200, 'USD', '$1,200'],
+    [149, 'ILS', '₪149'],
+  ])('test_format_price: %s %s', (amount, currency, expected) => {
+    expect(formatPrice(amount, currency)).toBe(expected);
   });
 });
