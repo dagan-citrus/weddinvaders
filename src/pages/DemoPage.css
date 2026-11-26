@@ -6,6 +6,12 @@
   padding-bottom: var(--wv-space-3);
 }
 
+/* A smaller title than other pages, for the same reason. */
+.demo-intro h1 {
+  margin-bottom: var(--wv-space-2);
+  font-size: var(--wv-text-2xl);
+}
+
 .demo-play {
   padding-top: 0;
 }
