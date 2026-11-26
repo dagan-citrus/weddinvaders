@@ -1,0 +1,121 @@
+/* Demo page. Every selector starts with `.demo-`; shared primitives live in styles/site.css. */
+
+.demo-intro {
+  /* Short, so the game sits high on the page. */
+  padding-top: var(--wv-space-4);
+  padding-bottom: var(--wv-space-3);
+}
+
+.demo-play {
+  padding-top: 0;
+}
+
+/* ── Sample switcher ── */
+
+.demo-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wv-space-2);
+  margin-bottom: var(--wv-space-3);
+}
+
+.demo-switcher a.demo-sample-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--wv-space-3);
+  border: 1px solid var(--wv-border);
+  border-radius: var(--wv-radius);
+  color: var(--wv-text);
+  font-weight: bold;
+  text-align: center;
+  text-decoration: none;
+}
+
+.demo-switcher a.demo-sample-link[aria-current='true'] {
+  border-color: var(--wv-gold);
+  color: var(--wv-gold);
+}
+
+/* ── The embedded game ──
+   The stage carries data-surface="game", so the game's own reset and button
+   base apply inside it. The rules below undo what the game would inherit from
+   the site and what it assumes about owning the whole page. */
+
+.demo-stage {
+  max-width: 100%;
+  margin-bottom: var(--wv-space-4);
+  line-height: normal;
+  font-family: Arial, sans-serif;
+  color: #fff;
+}
+
+.demo-stage .game-wrapper {
+  min-height: 0;
+  padding: 0;
+}
+
+/* Never taller than the screen. Width follows the height limit so the canvas keeps its shape. */
+.demo-stage .game-canvas {
+  width: auto;
+  max-height: calc(100vh - 24px);
+}
+
+/* On narrow screens the two players' controls wrap instead of overflowing. */
+.demo-stage .mobile-controls {
+  gap: var(--wv-space-2);
+}
+
+.demo-stage .mobile-player {
+  min-width: 0;
+}
+
+.demo-stage .ammo-buttons {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.demo-stage button {
+  touch-action: manipulation;
+}
+
+/* ── Sections under the game ── */
+
+.demo-controls,
+.demo-differences {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--wv-space-3);
+}
+
+.demo-controls {
+  margin-bottom: var(--wv-space-3);
+}
+
+.demo-differences-section .demo-differences {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.demo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wv-space-3);
+  margin-top: var(--wv-space-4);
+}
+
+@media (min-width: 720px) {
+  .demo-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .demo-differences {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .demo-actions {
+    flex-direction: row;
+  }
+}

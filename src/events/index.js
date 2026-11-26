@@ -1,14 +1,15 @@
 // Public entry point of the event model. Code outside src/events imports from here.
 import { defaultEvent } from './defaultEvent';
+import { mayaAndNoahEvent } from './mayaAndNoahEvent';
 import { createEventRegistry } from './registry';
 
 /** Every bundled event, in registration order. Later events are appended here. */
-export const ALL_EVENTS = [defaultEvent];
+export const ALL_EVENTS = [defaultEvent, mayaAndNoahEvent];
 
 /** The app-wide registry. Building it throws if any bundled event is invalid. */
 export const eventRegistry = createEventRegistry(ALL_EVENTS);
 
-export { defaultEvent };
+export { defaultEvent, mayaAndNoahEvent };
 export { createEventRegistry, SLUG_STATUS } from './registry';
 export { validateEvent, assertValidEvent, EventConfigError, EVENT_ISSUE } from './eventConfig';
 export {
