@@ -19,6 +19,8 @@ src/
 │   ├── GameplayPreview.jsx # CSS-only illustration of the game screen for the hero — not the game, no canvas
 │   ├── PricingPage.jsx     # `/pricing`: packages, add-ons, terms, rendered from content/en/pricing.js (+ PricingPage.css)
 │   ├── orderLink.js        # getOrderPath(packageId), PACKAGE_QUERY_PARAM — the pricing → order link contract
+│   ├── OrderPage.jsx       # `/order`: order form, result panel with the prepared email, FAQ (+ OrderPage.css)
+│   ├── orderForm.js        # Pure order logic: suggestSlug, validateOrder (error codes), buildOrderMessage, buildMailtoUrl, composeOrder, isOrderingOpen
 │   ├── PlaceholderPage.jsx # Site pages not built yet: heading + "Coming soon."
 │   ├── NotFoundPage.jsx    # "Event not found" + link to the main site
 │   ├── DemoPage.jsx        # `/demo`: <Game event={defaultEvent} />, no layout
@@ -110,6 +112,26 @@ Design: `docs/designs/T8.md`. The one content module that also holds numbers and
   to `getOrderPath(id)` (`pages/orderLink.js`), i.e. `/order?package=<id>`; the order page reads
   the same `PACKAGE_QUERY_PARAM`. Renaming an id changes that URL.
 
+### Order (`pages/OrderPage.jsx`, `content/en/order.js`)
+Design: `docs/designs/T9.md`. There is no backend: the form sends and stores nothing. A valid
+submit composes a `mailto:` to `SITE_CONFIG.contactEmail` and shows the same message in a result
+panel (link, address, subject, full text, "Copy message") for visitors whose mail app does not open.
+- **Opening orders:** set a real `contactEmail` in `siteConfig.js`. While it is still
+  `PLACEHOLDER_CONTACT_EMAIL`, `isOrderingOpen()` is false: the form stays usable (live address
+  check included) but shows the "Ordering is not open yet" notice, the submit button is disabled
+  and no result panel or contact address can appear. Nothing else needs changing.
+- **Pure logic lives in `pages/orderForm.js`** and returns error *codes*; every message is in
+  `content/en/order.js`. `getSlugStatus`, today's date and the package ids are passed in. What the
+  visitor types is only ever a `fillTemplate` *value*, never a template.
+- **`?package=<id>`** (from a pricing tier) is read once when the page mounts; package and add-on
+  names come from the pricing content, and no price is shown here.
+- **Address field:** follows `suggestSlug(groom, bride)` until the visitor edits it, and shows the
+  registry's live status. "Free" only means not among the bundled events — the copy says the
+  address is a request that we confirm by email.
+- **Mailto limits:** notes are capped at `NOTES_MAX_LENGTH`; if the URL would still exceed
+  `MAILTO_MAX_LENGTH` (non-Latin notes encode long), the link carries a marker instead of the
+  notes and the panel says so. The panel always shows the full message.
+
 ## CSS layers
 Vite emits one stylesheet, so every rule is global. Two things keep the game and the site apart:
 - **Surface attribute.** `App.jsx` sets `html[data-surface]` to `game` on `/demo` and `/<slug>` and
@@ -121,7 +143,7 @@ Vite emits one stylesheet, so every rule is global. Two things keep the game and
 - **Site CSS is scoped by class.** Tokens are `--wv-*` custom properties in `styles/tokens.css`.
   Every site selector starts with `.site` (shell and primitives, `styles/site.css`), with
   `html[data-surface='site']`, or with a page prefix (`.home-…` in `pages/HomePage.css`,
-  `.pricing-…` in `pages/PricingPage.css`), so no
+  `.pricing-…` in `pages/PricingPage.css`, `.order-…` in `pages/OrderPage.css`), so no
   site rule can reach the game. `.site a` sets link colours, so link-like components raise
   specificity with `.site a.<class>`.
 - One breakpoint, `min-width: 720px`; styles are mobile-first. The nine nav links wrap — there is
