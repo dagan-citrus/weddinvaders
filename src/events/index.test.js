@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as events from './index';
-import { ALL_EVENTS, eventRegistry, defaultEvent, SLUG_STATUS } from './index';
+import { ALL_EVENTS, eventRegistry, defaultEvent, mayaAndNoahEvent, SLUG_STATUS } from './index';
 
 const BARREL_EXPORTS = [
   'defaultEvent', 'eventRegistry', 'ALL_EVENTS',
@@ -29,6 +29,14 @@ describe('events barrel and app-wide registry', () => {
     expect(eventRegistry.getSlugStatus('DemoWedding')).toBe(SLUG_STATUS.TAKEN);
     expect(eventRegistry.getSlugStatus('demo')).toBe(SLUG_STATUS.RESERVED);
     expect(eventRegistry.getSlugStatus('TomAndAnna')).toBe(SLUG_STATUS.AVAILABLE);
+  });
+
+  it('test_sample_registered', () => {
+    expect(eventRegistry.findBySlug('mayaandnoah')).toBe(mayaAndNoahEvent);
+    expect(eventRegistry.listPublicEvents()).not.toContain(mayaAndNoahEvent);
+    expect(eventRegistry.getSlugStatus('MayaAndNoah')).toBe(SLUG_STATUS.TAKEN);
+    expect(ALL_EVENTS).toEqual([defaultEvent, mayaAndNoahEvent]);
+    expect(ALL_EVENTS[1]).toBe(mayaAndNoahEvent);
   });
 
   it.each(BARREL_EXPORTS)('test_barrel_exports: %s', (name) => {

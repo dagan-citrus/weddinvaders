@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import { usePathname, navigate } from './navigation';
+import { usePathname, useLocationSearch, navigate } from './navigation';
 
 const HOME_PATH = '/';
 const PATH_TEST_ID = 'path';
@@ -16,6 +16,14 @@ function renderAt(path) {
 }
 
 const shownPath = () => screen.getByTestId(PATH_TEST_ID).textContent;
+
+const SEARCH_TEST_ID = 'search';
+
+function SearchProbe() {
+  return <span data-testid={SEARCH_TEST_ID}>{useLocationSearch()}</span>;
+}
+
+const shownSearch = () => screen.getByTestId(SEARCH_TEST_ID).textContent;
 
 beforeEach(() => {
   window.history.replaceState(null, '', HOME_PATH);
@@ -113,5 +121,50 @@ describe('navigation', () => {
 
     expect(window.location.hash).toBe('#faq');
     expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  it('test_search_hook', () => {
+    window.history.replaceState(null, '', '/demo');
+    render(<SearchProbe />);
+    expect(shownSearch()).toBe('');
+
+    act(() => navigate('/demo?event=garden'));
+    expect(shownSearch()).toBe('?event=garden');
+
+    act(() => navigate('/demo'));
+    expect(shownSearch()).toBe('');
+  });
+
+  it('test_search_hook: follows back and forward', () => {
+    window.history.replaceState(null, '', '/demo');
+    render(<SearchProbe />);
+
+    act(() => {
+      window.history.replaceState(null, '', '/demo?event=garden');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    expect(shownSearch()).toBe('?event=garden');
+  });
+
+  it('test_navigate_no_scroll_option', () => {
+    renderAt('/demo');
+    const scrollTo = vi.spyOn(window, 'scrollTo');
+    const lengthBefore = window.history.length;
+
+    act(() => navigate('/demo?event=garden', { replace: true, scroll: false }));
+
+    expect(window.location.search).toBe('?event=garden');
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(window.history.length).toBe(lengthBefore);
+  });
+
+  it('test_navigate_no_scroll_option: scrolling stays the default', () => {
+    renderAt('/demo');
+    const scrollTo = vi.spyOn(window, 'scrollTo');
+
+    act(() => navigate('/demo?event=garden', { replace: true }));
+
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
   });
 });

@@ -32,7 +32,7 @@ const FORBIDDEN_STRINGS = [
 
 const DEFAULT_IMAGE_MARKER = '-nobg.png';
 const DEFAULT_EVENT_FILE = join('events', 'defaultEvent.js');
-const DEMO_PAGE_FILE = join('pages', 'DemoPage.jsx');
+const DEMO_SAMPLES_FILE = join('pages', 'demoSamples.js');
 const TEST_HELPER_DIR = `test${sep}`;
 
 /** Every non-test `*.js` / `*.jsx` file under `src/`, as a path relative to it. */
@@ -92,6 +92,6 @@ describe('game engine sources', () => {
   });
 
   it('test_demo_page_passes_default_event', () => {
-    expect(readSource(DEMO_PAGE_FILE)).toContain('defaultEvent');
+    expect(readSource(DEMO_SAMPLES_FILE)).toContain('defaultEvent');
   });
 });
