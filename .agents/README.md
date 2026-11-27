@@ -9,16 +9,16 @@ Space Invaders-style cooperative two-player browser game built with React + Vite
 | [`knowledge/architecture.md`](knowledge/architecture.md) | Module overview, data flow, game loop, key entry points |
 | [`knowledge/dev-environment.md`](knowledge/dev-environment.md) | Prerequisites, run/build commands, gotchas |
 | [`knowledge/game-design.md`](knowledge/game-design.md) | Game phases, ammo types, item system, level structure, win/lose rules |
-| [`knowledge/testing.md`](knowledge/testing.md) | How to verify changes (no automated tests — manual + preview server) |
+| [`knowledge/testing.md`](knowledge/testing.md) | How to verify changes: Vitest component tests, Playwright e2e, CI, plus the manual gameplay checklist |
 
 ## Component Files
 
 | File | Component | Purpose |
 |------|-----------|---------|
-| [`knowledge/use-game-state.md`](knowledge/use-game-state.md) | `useGameState()` — `src/useGameState.js` | Core game-logic hook: state, input, 60fps update loop, collisions, phase transitions |
-| [`knowledge/renderer.md`](knowledge/renderer.md) | `render()` + draw functions — `src/renderer.js` | All canvas drawing, pure `(ctx, state, assets) → void` |
-| [`knowledge/game-jsx.md`](knowledge/game-jsx.md) | `Game` — `src/Game.jsx` | React shell orchestrating hooks, canvas, and controls |
-| [`knowledge/constants.md`](knowledge/constants.md) | `src/constants.js` | Shared dimensions, timing, `WEDDING_ITEMS`/`AMMO_META` schema (highest fan-in module in the repo) |
+| [`knowledge/use-game-state.md`](knowledge/use-game-state.md) | `useGameState(event)` — `src/useGameState.js` | Core game logic (pure `stepGame` + hook): state, input, 60fps update loop, collisions, phase transitions |
+| [`knowledge/renderer.md`](knowledge/renderer.md) | `render()` + draw functions — `src/renderer.js` | All canvas drawing, pure `(ctx, state, assets, event) → void` |
+| [`knowledge/game-jsx.md`](knowledge/game-jsx.md) | `Game` — `src/Game.jsx` | React shell for one event (`<Game event>`), orchestrating hooks, canvas, and controls |
+| [`knowledge/constants.md`](knowledge/constants.md) | `src/constants.js` | Shared engine dimensions, timing and `AMMO_META` (highest fan-in module in the repo); per-event items and levels live in `src/events/` |
 
 ## Skill Files
 

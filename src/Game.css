@@ -1,10 +1,11 @@
-* {
+/* The two page-level rules apply on the game surface only (see index.css). */
+:where([data-surface='game']) * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-body {
+:where(html[data-surface='game']) body {
   background: #050510;
   display: flex;
   justify-content: center;
